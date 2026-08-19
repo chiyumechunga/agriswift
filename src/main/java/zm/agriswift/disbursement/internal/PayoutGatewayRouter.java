@@ -1,0 +1,28 @@
+package zm.agriswift.disbursement.internal;
+
+import zm.agriswift.disbursement.Payment;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.UUID;
+
+/** "Payout gateway router" box: picks bank transfer vs. mobile money and hands off to the matching client. */
+@Component
+class PayoutGatewayRouter {
+
+    private final List<GatewayClient> clients;
+
+    PayoutGatewayRouter(List<GatewayClient> clients) {
+        this.clients = clients;
+    }
+
+    void route(Payment payment) {
+        GatewayClient client = clients.stream()
+                .filter(c -> c.supports(payment.getChannelType()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "No gateway client registered for channel " + payment.getChannelType()));
+        client.submit(payment.getPaymentId(), payment.getUetr());
+        payment.markExecuted();
+    }
+}
