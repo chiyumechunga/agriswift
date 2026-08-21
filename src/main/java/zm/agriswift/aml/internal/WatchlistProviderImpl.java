@@ -9,32 +9,6 @@ import zm.agriswift.farmer.api.FarmerDirectory;
 import java.util.UUID;
 
 @Component
-class WatchlistProviderImpl implements WatchlistProvider {
+public class WatchlistProviderImpl  {
 
-    private static final Logger log = LoggerFactory.getLogger(WatchlistProviderImpl.class);
-
-    private FarmerDirectory farmerDirectory;
-
-
-
-    WatchlistProviderImpl(FarmerDirectory farmerDirectory) {
-        this.farmerDirectory = farmerDirectory;
-    }
-
-    @Override
-    public AmlScreeningResult.MatchStatus screen(UUID farmerId) {
-        return farmerDirectory.findById(farmerId)
-                .map(farmerSummary -> {
-                    log.info("Screening farmer [{}] against AML sanctions watchlists", farmerSummary.farmerCode());
-
-                    // TODO: Replace with real REST/gRPC sanctions API client (e.g., Zambia FIC)
-                    // Example screening attributes: farmerSummary.fullName(), farmerSummary.farmerCode()
-
-                    return AmlScreeningResult.MatchStatus.CLEAR;
-                })
-                .orElseGet(() -> {
-                    log.warn("Cannot perform AML screening: Farmer [{}] not found or anonymized", farmerId);
-                    return AmlScreeningResult.MatchStatus.REJECTED;
-                });
-    }
 }

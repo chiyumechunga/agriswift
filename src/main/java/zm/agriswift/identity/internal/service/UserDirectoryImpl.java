@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Component
-class UserDirectoryImpl implements UserDirectory {
+public class UserDirectoryImpl implements UserDirectory {
 
     private final UserRepository userRepository;
 

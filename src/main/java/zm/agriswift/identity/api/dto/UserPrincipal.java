@@ -9,7 +9,7 @@ public record UserPrincipal(
         String username,
         String email,
         Set<String> roles,
-        UUID depotId,
+         Integer depotId,
         boolean enabled,
         PrincipalType principalType
 ) {}

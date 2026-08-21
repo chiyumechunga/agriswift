@@ -22,7 +22,7 @@ import java.util.UUID;
 
 @Service("farmerAuthService")
 @Transactional
-class FarmerAuthService implements AuthService {
+public class FarmerAuthService implements AuthService {
 
     private final FarmerCredentialRepository credentialRepository;
     private final PasswordEncoder pinEncoder;
@@ -131,14 +131,15 @@ class FarmerAuthService implements AuthService {
     private UserPrincipal loadPrincipal(UUID userId) {
         FarmerSummary farmer = farmerDirectory.findById(userId)
                 .orElseThrow(() -> new BadCredentialsException("Farmer not found"));
+
         return new UserPrincipal(
-                farmer.farmerId(),
-                farmer.farmerId(),
-                farmer.mobileNumber(),
-                farmer.email(),
-                Set.of("FARMER"),
-                null,
-                true,
+                farmer.farmerId(),          // UUID
+                farmer.farmerId(),          // UUID (same as id for farmers)
+                farmer.mobileNumber(),      // String (mobile as username)
+                farmer.email(),             // String (may be null)
+                Set.of("FARMER"),           // roles
+                null,                       // depotId is always null for farmers
+                true,                       // enabled
                 PrincipalType.FARMER
         );
     }

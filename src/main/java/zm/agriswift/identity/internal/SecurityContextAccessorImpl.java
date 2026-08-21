@@ -10,7 +10,7 @@ import zm.agriswift.identity.internal.security.SecurityUser;
 import java.util.Optional;
 
 @Component
-class SecurityContextAccessorImpl implements SecurityContextAccessor {
+public class SecurityContextAccessorImpl implements SecurityContextAccessor {
 
     @Override
     public Optional<UserPrincipal> getCurrentUser() {

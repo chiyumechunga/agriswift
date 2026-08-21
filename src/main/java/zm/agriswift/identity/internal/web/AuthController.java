@@ -15,7 +15,7 @@ import zm.agriswift.identity.internal.service.RefreshRequest;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-class AuthController {
+public class AuthController {
 
     private final AuthService staffAuthService;
 

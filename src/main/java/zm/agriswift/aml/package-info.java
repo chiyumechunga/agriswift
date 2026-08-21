@@ -4,7 +4,7 @@
  * watchlist provider never blocks a payout in flight.
  */
 @org.springframework.modulith.ApplicationModule(
-        allowedDependencies = {"common", "farmer", "disbursement"}
+        allowedDependencies = {"common", "farmer", "disbursement", "farmer :: farmer"}
 )
 
 package zm.agriswift.aml;

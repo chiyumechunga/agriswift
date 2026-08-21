@@ -1,7 +1,10 @@
 package zm.agriswift.farmer.api.dto;
 
+import org.springframework.modulith.NamedInterface;
+
 import java.util.UUID;
 
+@NamedInterface
 public record FarmerSummary(
         UUID farmerId,
         String farmerCode,

@@ -3,7 +3,7 @@
  *
  * <h2>Public API</h2>
  * <p>
- * The module exposes a single public interface, {@link zm.agriswift.farmer.FarmerDirectory},
+ * The module exposes a single public interface, {@link zm.agriswift.farmer.api.FarmerDirectory},
  * which provides read‑only access to farmer summaries and preferred payout accounts.
  * All other classes (entities, repositories, services, handlers) are package‑private and
  * must NOT be referenced from outside this module.
@@ -50,7 +50,9 @@
  * {@code /api/farmers}. They delegate all operations to the package‑private services
  * and contain no business logic.
  */
+
 @org.springframework.modulith.ApplicationModule(
         allowedDependencies = {"common", "referencedata"}
+
 )
 package zm.agriswift.farmer;

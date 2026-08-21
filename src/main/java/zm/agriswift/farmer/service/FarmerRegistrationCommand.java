@@ -20,7 +20,7 @@ public record FarmerRegistrationCommand(
         String preferredLanguage,
         OnboardingChannel onboardingChannel,
         UUID registeringAgentId,
-        UUID registeringDepotId
+        int registeringDepotId
 ) {
     // Optional: validation can be added in the service if needed
 }

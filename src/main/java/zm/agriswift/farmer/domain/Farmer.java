@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import zm.agriswift.common.BaseEntity;
 import zm.agriswift.referencedata.Depot;
 
@@ -17,6 +18,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "farmers")
 @Getter
+@Setter (AccessLevel.PACKAGE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Farmer extends BaseEntity {
 
@@ -53,7 +55,7 @@ public class Farmer extends BaseEntity {
     @Column(name = "mobile_number_hash", unique = true)
     private byte[] mobileNumberHash;
 
-    @Column(name = "email", length = 255)
+    @Column(name = "email")
     private String email;
 
     @Column(name = "preferred_language", nullable = false, length = 20)

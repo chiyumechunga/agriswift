@@ -15,7 +15,7 @@ import zm.agriswift.identity.internal.service.RefreshRequest;
 
 @RestController
 @RequestMapping("/api/v1/auth/farmer")
-class FarmerAuthController {
+public class FarmerAuthController {
 
     private final AuthService farmerAuthService;
 

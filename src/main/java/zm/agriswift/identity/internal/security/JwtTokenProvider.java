@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Component
-class JwtTokenProvider implements AccessTokenProvider {
+public class JwtTokenProvider implements AccessTokenProvider {
 
     private final SecretKey secretKey;
     private final long accessTokenExpirationMs;

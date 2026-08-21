@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @Service("staffAuthService")
 @Transactional
-class StaffAuthService implements AuthService {
+public class StaffAuthService implements AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final AccessTokenProvider tokenProvider;
@@ -89,18 +89,22 @@ class StaffAuthService implements AuthService {
                 RefreshTokenGenerator.hash(raw), userId, Instant.now().plusMillis(refreshTokenExpirationMs)));
         return raw;
     }
-
     private UserPrincipal loadPrincipal(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadCredentialsException("User not found"));
+
         return new UserPrincipal(
-                user.getUserId(),
-                user.getFarmerId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toSet()),
-                user.getDepot() != null ? user.getDepot().getDepotId() : null,
-                user.isActive(),
+                user.getUserId(),                               // UUID
+                user.getFarmerId(),                             // UUID (nullable)
+                user.getUsername(),                             // String
+                user.getEmail(),                                // String
+                user.getRoles().stream()
+                        .map(Role::getRoleName)                 // Role::getRoleName (String)
+                        .collect(Collectors.toSet()),
+                user.getDepot() != null
+                        ? user.getDepot().getDepotId()          // Integer depotId
+                        : null,
+                user.isActive(),                                // boolean
                 PrincipalType.STAFF
         );
     }

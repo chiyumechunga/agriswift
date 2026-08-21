@@ -1,12 +1,14 @@
 package zm.agriswift.farmer.domain;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name="Kyc_documents")
+@Getter
 public class KycDocument {
 
     @Id

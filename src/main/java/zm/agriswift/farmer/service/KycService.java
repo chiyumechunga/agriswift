@@ -4,13 +4,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import zm.agriswift.common.exception.DomainException;
 import zm.agriswift.common.exception.NotFoundException;
+import zm.agriswift.farmer.api.AmlScreeningPort;
 import zm.agriswift.farmer.domain.Farmer;
 import zm.agriswift.farmer.domain.KycDocument;
 import zm.agriswift.farmer.internal.FarmerRepository;
 import zm.agriswift.farmer.internal.KycDocumentRepository;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -18,7 +21,7 @@ public class KycService {
 
     private final FarmerRepository farmerRepository;
     private final KycDocumentRepository documentRepository;
-    private final AmlScreeningPort amlScreeningPort; // Port (interface) for external AML
+    private final AmlScreeningPort amlScreeningPort;  //Port (interface) for external AML
 
     public KycService(FarmerRepository farmerRepository,
                       KycDocumentRepository documentRepository,
@@ -45,7 +48,7 @@ public class KycService {
         }
 
         // 2. AML screening via a port (dependency inversion)
-        if (amlScreeningPort.isSanctioned(farmer)) {
+        if (amlScreeningPort.isSanctioned(farmer.getFarmerId())) {
             farmer.markKycRejected();
             farmerRepository.save(farmer);
             throw new DomainException("AML screening failed.");
@@ -61,6 +64,6 @@ public class KycService {
                 .orElseThrow(() -> new NotFoundException("Farmer not found"));
         farmer.markKycRejected();
         farmerRepository.save(farmer);
-        // Optionally persist the rejection reason in a separate log.
+        // Optionally, persist the rejection reason in a separate log.
     }
 }
