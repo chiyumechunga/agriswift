@@ -19,6 +19,6 @@ class FraOfficerHandler implements OnboardingHandler {
     public void apply(Farmer farmer, Map<String, Object> context) {
         UUID agentId = (UUID) context.get("agentId");
         Depot depot = (Depot) context.get("depot");
-        farmer.assignFraOfficerRegistration(agentId, depot, OnboardingChannel.FRA_DEPOT);
+        //farmer.assignFraOfficerRegistration(agentId, depot, OnboardingChannel.FRA_DEPOT);
     }
 }

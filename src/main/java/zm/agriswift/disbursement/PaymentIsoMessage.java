@@ -1,5 +1,6 @@
 package zm.agriswift.disbursement;
 import jakarta.persistence.*;
+import zm.agriswift.common.CreationAuditedEntity;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -7,7 +8,7 @@ import java.util.UUID;
 /** Raw ISO 20022 (pain.001 / pacs.008 / pacs.002) payloads, kept off the high-write payments table. */
 @Entity
 @Table(name = "payment_iso_messages")
-public class PaymentIsoMessage {
+public class PaymentIsoMessage extends CreationAuditedEntity {
 
     public enum Direction { OUTBOUND, INBOUND }
 

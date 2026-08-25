@@ -44,7 +44,7 @@ public record RegisterFarmerRequest(
         // Context for FRA officer registration (agentId and depotId)
         UUID registeringAgentId,
 
-        UUID registeringDepotId
+        int registeringDepotId
 
 ) {
     /**

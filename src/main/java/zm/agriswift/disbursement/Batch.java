@@ -2,6 +2,7 @@ package zm.agriswift.disbursement;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import zm.agriswift.common.CreationAuditedEntity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -10,7 +11,7 @@ import java.util.UUID;
 /** Batches a set of payments under one treasury-facing reference (FR-33). */
 @Entity
 @Table(name = "batches")
-public class Batch {
+public class Batch extends CreationAuditedEntity {
 
     public enum Status { PENDING, PROCESSING, COMPLETED, PARTIALLY_FAILED }
 

@@ -45,7 +45,7 @@ public class Payment extends BaseEntity {
     private BigDecimal amount;
 
     @Getter
-    @Column(name = "currency", nullable = false, length = 3)
+    @Column(name = "currency", nullable = false, columnDefinition = "bpchar(3)")
     private String currency = "ZMW";
 
     @Getter

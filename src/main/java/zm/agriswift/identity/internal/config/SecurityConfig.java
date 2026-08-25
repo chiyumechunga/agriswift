@@ -3,7 +3,6 @@ package zm.agriswift.identity.internal.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -11,7 +10,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -32,29 +30,26 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationEntryPoint authenticationEntryPoint;
     private final AccessDeniedHandler accessDeniedHandler;
-    private final UserDetailsService userDetailsService;
-    private final FarmerAuthenticationProvider farmerAuthenticationProvider;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             AuthenticationEntryPoint authenticationEntryPoint,
-            AccessDeniedHandler accessDeniedHandler,
-            UserDetailsService userDetailsService,
-            FarmerAuthenticationProvider farmerAuthenticationProvider) {
+            AccessDeniedHandler accessDeniedHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
-        this.userDetailsService = userDetailsService;
-        this.farmerAuthenticationProvider = farmerAuthenticationProvider;
     }
+
     @Bean
     public AuthenticationManager authenticationManager(
             StaffUserDetailsService staffUserDetailsService,
             FarmerAuthenticationProvider farmerAuthenticationProvider,
             PasswordEncoder passwordEncoder) {
 
-        DaoAuthenticationProvider staffProvider = new DaoAuthenticationProvider();
-        staffProvider.setUserDetailsService(staffUserDetailsService);
+        // Spring Security 7: UserDetailsService is a constructor argument;
+        // the no-arg constructor and setUserDetailsService(...) were removed.
+        DaoAuthenticationProvider staffProvider =
+                new DaoAuthenticationProvider(staffUserDetailsService);
         staffProvider.setPasswordEncoder(passwordEncoder);
 
         return new ProviderManager(List.of(staffProvider, farmerAuthenticationProvider));

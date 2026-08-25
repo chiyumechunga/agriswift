@@ -1,6 +1,7 @@
 package zm.agriswift.entitlement;
 
 import lombok.Getter;
+import zm.agriswift.common.CreationAuditedEntity;
 import zm.agriswift.farmer.domain.Farmer;
 import zm.agriswift.referencedata.CropPrice;
 import zm.agriswift.referencedata.CropType;
@@ -22,7 +23,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "entitlements")
-public class Entitlement {
+public class Entitlement extends CreationAuditedEntity {
 
     public enum ValidationStatus { PENDING, VALIDATED, REJECTED }
 

@@ -7,7 +7,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name="Kyc_documents")
+@Table(name="kyc_documents")
 @Getter
 public class KycDocument {
 

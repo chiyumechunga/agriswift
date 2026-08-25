@@ -1,6 +1,5 @@
 package zm.agriswift.identity.internal.service;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -49,13 +48,16 @@ public class StaffAuthService implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
-        );
-        SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
+                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+
+        // Pattern-matched cast: removes the NPE warning and fails fast on unexpected principals
+        if (!(authentication.getPrincipal() instanceof SecurityUser securityUser)) {
+            throw new BadCredentialsException("Staff authentication did not produce a SecurityUser");
+        }
         UserPrincipal principal = securityUser.getUserPrincipal();
 
         String accessToken = tokenProvider.generateToken(principal);
-        String refreshToken = issueRefreshToken(principal.id());
+        String refreshToken = issueRefreshToken(principal);
         return new AuthResponse(accessToken, refreshToken, "Bearer", principal);
     }
 
@@ -64,6 +66,11 @@ public class StaffAuthService implements AuthService {
         RefreshToken stored = refreshTokenRepository.findByToken(RefreshTokenGenerator.hash(presentedToken))
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
+        // Hardening: a farmer token must never be redeemable on the staff path
+        if (stored.getPrincipalType() != PrincipalType.STAFF) {
+            throw new BadCredentialsException("Invalid refresh token for this principal type");
+        }
+
         if (!stored.isActive(Instant.now())) {
             refreshTokenRepository.revokeAllByUserId(stored.getUserId(), Instant.now());
             throw new BadCredentialsException("Refresh token reuse detected");
@@ -71,7 +78,7 @@ public class StaffAuthService implements AuthService {
 
         UserPrincipal principal = loadPrincipal(stored.getUserId());
         String newAccessToken = tokenProvider.generateToken(principal);
-        String newRefreshToken = issueRefreshToken(principal.id());
+        String newRefreshToken = issueRefreshToken(principal);
         stored.revoke(RefreshTokenGenerator.hash(newRefreshToken), Instant.now());
         refreshTokenRepository.save(stored);
 
@@ -83,29 +90,30 @@ public class StaffAuthService implements AuthService {
         refreshTokenRepository.revokeAllByUserId(userId, Instant.now());
     }
 
-    private String issueRefreshToken(UUID userId) {
+    private String issueRefreshToken(UserPrincipal principal) {
         String raw = RefreshTokenGenerator.generateRaw();
         refreshTokenRepository.save(new RefreshToken(
-                RefreshTokenGenerator.hash(raw), userId, Instant.now().plusMillis(refreshTokenExpirationMs)));
+                RefreshTokenGenerator.hash(raw),
+                principal.id(),
+                Instant.now().plusMillis(refreshTokenExpirationMs),
+                principal.principalType()));   // 4th arg: schema's principal_type discriminator
         return raw;
     }
+
     private UserPrincipal loadPrincipal(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadCredentialsException("User not found"));
 
         return new UserPrincipal(
-                user.getUserId(),                               // UUID
-                user.getFarmerId(),                             // UUID (nullable)
-                user.getUsername(),                             // String
-                user.getEmail(),                                // String
+                user.getUserId(),
+                user.getFarmerId(),
+                user.getUsername(),
+                user.getEmail(),
                 user.getRoles().stream()
-                        .map(Role::getRoleName)                 // Role::getRoleName (String)
+                        .map(Role::getRoleName)
                         .collect(Collectors.toSet()),
-                user.getDepot() != null
-                        ? user.getDepot().getDepotId()          // Integer depotId
-                        : null,
-                user.isActive(),                                // boolean
-                PrincipalType.STAFF
-        );
+                user.getDepot() != null ? user.getDepot().getDepotId() : null,
+                user.isActive(),
+                PrincipalType.STAFF);
     }
 }

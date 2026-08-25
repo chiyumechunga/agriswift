@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import zm.agriswift.common.BaseEntity;
 import zm.agriswift.referencedata.Depot;
 
@@ -18,10 +17,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "farmers")
 @Getter
-@Setter (AccessLevel.PACKAGE)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA only
 public class Farmer extends BaseEntity {
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -91,15 +88,37 @@ public class Farmer extends BaseEntity {
     @OneToMany(mappedBy = "farmer")
     private List<FarmerPaymentAccount> paymentAccounts = new ArrayList<>();
 
-    // ----------- State-changing behaviour -----------
-
-    public void assignFraOfficerRegistration(UUID agentId, Depot depot, OnboardingChannel channel) {
-        if (channel == OnboardingChannel.SELF_REGISTRATION) {
-            throw new IllegalArgumentException("SELF_REGISTRATION not allowed for FRA officer.");
-        }
-        this.registeringAgentId = Objects.requireNonNull(agentId);
-        this.registeringDepot = Objects.requireNonNull(depot);
-        this.onboardingChannel = channel;
+    // ---------- Factory Method ----------
+    public static Farmer register(
+            String farmerCode,
+            String firstName,
+            String middleName,
+            String lastName,
+            LocalDate dateOfBirth,
+            byte[] nationalIdCiphertext,
+            byte[] nationalIdHash,
+            byte[] mobileNumberCiphertext,
+            byte[] mobileNumberHash,
+            String email,
+            String preferredLanguage,
+            OnboardingChannel onboardingChannel,
+            UUID registeringAgentId,
+            Depot registeringDepot
+    ) {
+        Farmer farmer = new Farmer();
+        farmer.farmerCode = Objects.requireNonNull(farmerCode, "farmerCode");
+        farmer.firstName = Objects.requireNonNull(firstName, "firstName");
+        farmer.middleName = middleName;
+        farmer.lastName = Objects.requireNonNull(lastName, "lastName");
+        farmer.dateOfBirth = dateOfBirth;
+        farmer.nationalIdCiphertext = Objects.requireNonNull(nationalIdCiphertext, "nationalIdCiphertext");
+        farmer.nationalIdHash = Objects.requireNonNull(nationalIdHash, "nationalIdHash");
+        farmer.mobileNumberCiphertext = mobileNumberCiphertext;
+        farmer.mobileNumberHash = mobileNumberHash;
+        farmer.email = email;
+        farmer.preferredLanguage = preferredLanguage != null ? preferredLanguage : "ENGLISH";
+        farmer.applyOnboarding(onboardingChannel, registeringAgentId, registeringDepot);
+        return farmer;
     }
 
     public void assignSelfRegistration() {
@@ -107,7 +126,26 @@ public class Farmer extends BaseEntity {
         this.registeringDepot = null;
         this.onboardingChannel = OnboardingChannel.SELF_REGISTRATION;
     }
+    // ---------- Private Onboarding Logic (encapsulated) ----------
+    private void applyOnboarding(OnboardingChannel channel, UUID agentId, Depot depot) {
+        if (channel == OnboardingChannel.SELF_REGISTRATION) {
+            this.registeringAgentId = null;
+            this.registeringDepot = null;
+            this.onboardingChannel = OnboardingChannel.SELF_REGISTRATION;
+        } else {
+            // FRA_DEPOT or FRA_FIELD_OFFICER
+            if (agentId == null || depot == null) {
+                throw new IllegalArgumentException(
+                        "Agent and depot are required for FRA onboarding channels."
+                );
+            }
+            this.registeringAgentId = agentId;
+            this.registeringDepot = depot;
+            this.onboardingChannel = channel;
+        }
+    }
 
+    // ---------- State-changing behaviour (already present) ----------
     public void markKycVerified(Instant verifiedAt) {
         if (this.kycStatus == KycStatus.VERIFIED) {
             throw new IllegalStateException("KYC already verified.");
@@ -118,14 +156,13 @@ public class Farmer extends BaseEntity {
 
     public void markKycRejected() {
         this.kycStatus = KycStatus.REJECTED;
-        this.kycVerifiedAt = Instant.now(); // optional: keep timestamp for audit
+        this.kycVerifiedAt = Instant.now();
     }
 
     public void deactivate() { this.active = false; }
 
     public void reactivate() { this.active = true; }
 
-    // Helper for display (no PII leak)
     public String getFullName() {
         return (firstName + " " + (middleName != null ? middleName + " " : "") + lastName).trim();
     }

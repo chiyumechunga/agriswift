@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import zm.agriswift.identity.api.dto.PrincipalType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -47,6 +48,10 @@ public class RefreshToken {
     @Column(name = "replaced_by_token", length = 128)
     private String replacedByToken;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "principal_type", nullable = false, length = 10)
+    private PrincipalType principalType;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -55,11 +60,12 @@ public class RefreshToken {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public RefreshToken(String token, UUID userId, Instant expiresAt) {
+    public RefreshToken(String token, UUID userId, Instant expiresAt, PrincipalType principalType) {
         this.token = token;
         this.userId = userId;
         this.expiresAt = expiresAt;
         this.revoked = false;
+        this.principalType = principalType;
     }
 
     /**

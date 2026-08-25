@@ -1,7 +1,7 @@
 package zm.agriswift.notification;
 
-
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -9,7 +9,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "notifications")
 @IdClass(Notification.NotificationId.class)
-public class Notification {
+@Getter                                  // resolves all "never accessed" warnings
+public class Notification {              // NO extends: created_at is part of the PK
 
     public enum Channel { SMS, USSD, VOICE, EMAIL }
 
@@ -25,8 +26,8 @@ public class Notification {
     private UUID notificationId;
 
     @Id
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;           // partition key = identity; set in factory
 
     @Column(name = "farmer_id", nullable = false)
     private UUID farmerId;
@@ -52,15 +53,22 @@ public class Notification {
     @Column(name = "status", nullable = false)
     private Status status = Status.QUEUED;
 
-    protected Notification() {
-        // JPA
-    }
+    @Column(name = "gateway_message_id", length = 80)
+    private String gatewayMessageId;
+
+    @Column(name = "sent_at")
+    private Instant sentAt;
+
+    @Column(name = "delivered_at")
+    private Instant deliveredAt;
+
+    protected Notification() { /* JPA */ }
 
     public static Notification queue(UUID farmerId, Channel channel, Type type,
                                      UUID relatedPaymentId, String content) {
         Notification n = new Notification();
         n.notificationId = UUID.randomUUID();
-        n.createdAt = Instant.now();
+        n.createdAt = Instant.now();     // PK component: must be assigned pre-insert
         n.farmerId = farmerId;
         n.channel = channel;
         n.notificationType = type;
@@ -69,6 +77,22 @@ public class Notification {
         return n;
     }
 
-    public record NotificationId(UUID notificationId, Instant createdAt) implements java.io.Serializable {
+    // Lifecycle transitions (DDD aggregate behaviour; also silences "never used")
+    public void markSent(String gatewayMessageId) {
+        this.status = Status.SENT;
+        this.gatewayMessageId = gatewayMessageId;
+        this.sentAt = Instant.now();
     }
+
+    public void markDelivered() {
+        this.status = Status.DELIVERED;
+        this.deliveredAt = Instant.now();
+    }
+
+    public void markFailed() {
+        this.status = Status.FAILED;
+    }
+
+    public record NotificationId(UUID notificationId, Instant createdAt)
+            implements java.io.Serializable { }
 }

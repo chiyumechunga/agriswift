@@ -1,6 +1,7 @@
 package zm.agriswift.disbursement;
 import jakarta.persistence.*;
 import lombok.Getter;
+import zm.agriswift.common.CreationAuditedEntity;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -8,7 +9,7 @@ import java.util.UUID;
 /** Append-only transition history for a payment. Revoke UPDATE/DELETE at the DB grant level too (see migration). */
 @Entity
 @Table(name = "payment_events")
-public class PaymentEvent {
+public class PaymentEvent extends CreationAuditedEntity {
 
     @Getter
     @Id

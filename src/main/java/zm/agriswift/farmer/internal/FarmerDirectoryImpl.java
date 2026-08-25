@@ -2,12 +2,15 @@ package zm.agriswift.farmer.internal;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import zm.agriswift.common.exception.DomainException;
 import zm.agriswift.farmer.api.FarmerDirectory;
 import zm.agriswift.farmer.api.dto.FarmerSummary;
 import zm.agriswift.farmer.api.dto.PreferredPayoutAccount;
 import zm.agriswift.farmer.domain.Farmer;
 import zm.agriswift.farmer.domain.FarmerPaymentAccount;
+import zm.agriswift.farmer.domain.KycStatus;
 
+import java.security.GeneralSecurityException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,39 +20,35 @@ public class FarmerDirectoryImpl implements FarmerDirectory {
 
     private final FarmerRepository farmerRepository;
     private final FarmerPaymentAccountRepository accountRepository;
+    private final PiiCipher piiCipher;
 
     FarmerDirectoryImpl(FarmerRepository farmerRepository,
-                        FarmerPaymentAccountRepository accountRepository) {
+                        FarmerPaymentAccountRepository accountRepository,
+                        PiiCipher piiCipher) {
         this.farmerRepository = farmerRepository;
         this.accountRepository = accountRepository;
+        this.piiCipher = piiCipher;
     }
 
     @Override
     public Optional<FarmerSummary> findById(UUID farmerId) {
-        return farmerRepository.findById(farmerId)
-                .map(this::toSummary);
+        return farmerRepository.findById(farmerId).map(this::toSummary);
     }
 
     @Override
-    public Optional<FarmerSummary> findByNationalIdHash(byte[] hash) {
-        return farmerRepository.findByNationalIdHash(hash)
-                .map(this::toSummary);
+    public Optional<FarmerSummary> findByNationalId(String nationalId) {
+        return farmerRepository.findByNationalIdHash(blindIndex(nationalId)).map(this::toSummary);
     }
 
     @Override
-    public Optional<FarmerSummary> findByMobileNumberHash(byte[] hash) {
-        return farmerRepository.findByMobileNumberHash(hash)
-                .map(this::toSummary);
+    public Optional<FarmerSummary> findByMobileNumber(String mobileNumber) {
+        return farmerRepository.findByMobileNumberHash(blindIndex(mobileNumber)).map(this::toSummary);
     }
-
 
     @Override
     public Optional<FarmerSummary> findByEmail(String email) {
-        // Assuming email is stored in plain text (or encrypted with searchable encryption),
-        // For simplicity, we assume email is plain text and has an index.
         return farmerRepository.findByEmail(email).map(this::toSummary);
     }
-
 
     @Override
     public Optional<PreferredPayoutAccount> findPreferredPayoutAccount(UUID farmerId) {
@@ -58,8 +57,7 @@ public class FarmerDirectoryImpl implements FarmerDirectory {
                 .map(acc -> new PreferredPayoutAccount(
                         acc.getAccountId(),
                         acc.getAccountType().name(),
-                        acc.getProvider().getProviderId()
-                ));
+                        acc.getProvider().getProviderId()));
     }
 
     private FarmerSummary toSummary(Farmer farmer) {
@@ -67,8 +65,26 @@ public class FarmerDirectoryImpl implements FarmerDirectory {
                 farmer.getFarmerId(),
                 farmer.getFarmerCode(),
                 farmer.getFullName(),
-                farmer.getKycStatus() == Farmer.kycStatus.VERIFIED,
-                farmer.isActive()
-        );
+                decrypt(farmer.getMobileNumberCiphertext()),
+                farmer.getEmail(),
+                farmer.getKycStatus() == KycStatus.VERIFIED,   // enum type, not the private field
+                farmer.isActive());
+    }
+
+    private byte[] blindIndex(String value) {
+        try {
+            return piiCipher.generateBlindIndex(value);
+        } catch (GeneralSecurityException e) {
+            throw new DomainException("Failed to derive blind index", e);
+        }
+    }
+
+    private String decrypt(byte[] ciphertext) {
+        if (ciphertext == null) return null;
+        try {
+            return piiCipher.decrypt(ciphertext); // adjust to PiiCipher's actual method name
+        } catch (GeneralSecurityException e) {
+            throw new DomainException("Failed to decrypt PII", e);
+        }
     }
 }

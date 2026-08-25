@@ -5,12 +5,13 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import zm.agriswift.common.BaseEntity;
+import zm.agriswift.common.CreationAuditedEntity;
 
 @Entity
 @Table(name = "depots")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Depot extends BaseEntity {
+public class Depot extends CreationAuditedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

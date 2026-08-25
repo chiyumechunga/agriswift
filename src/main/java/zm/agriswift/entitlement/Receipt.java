@@ -2,6 +2,7 @@ package zm.agriswift.entitlement;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import zm.agriswift.common.CreationAuditedEntity;
 import zm.agriswift.entitlement.Entitlement;
 
 import java.time.Instant;
@@ -10,7 +11,7 @@ import java.util.UUID;
 /** Mirrors FRA's paper "Produce Receipt and Certification Note" process. */
 @Entity
 @Table(name = "receipts")
-public class Receipt {
+public class Receipt extends CreationAuditedEntity {
 
     public enum Status { ISSUED, ACTIVE, VOIDED, RECONCILED }
 

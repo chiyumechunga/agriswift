@@ -2,13 +2,14 @@ package zm.agriswift.disbursement;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import zm.agriswift.common.CreationAuditedEntity;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "payment_authentications")
-public class PaymentAuthentication {
+public class PaymentAuthentication extends CreationAuditedEntity {
 
     public enum Method { OTP, PIN, BIOMETRIC }
 

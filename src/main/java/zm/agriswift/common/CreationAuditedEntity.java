@@ -12,15 +12,9 @@ import java.time.Instant;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Getter
-public abstract class BaseEntity {
+public abstract class CreationAuditedEntity {
 
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)
     private Instant createdAt;
-
-    // Read-only for Hibernate. The DB triggers (set_updated_at) handle the writes.
-    // insertable=false allows the DB DEFAULT now() to fire on INSERT.
-    // updatable=false allows the DB TRIGGER to fire on UPDATE.
-    @Column(name = "updated_at", insertable = false, updatable = false)
-    private Instant updatedAt;
 }

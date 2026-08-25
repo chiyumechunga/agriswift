@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import zm.agriswift.common.CreationAuditedEntity;
 import zm.agriswift.referencedata.PaymentProvider;
 
 import java.time.Instant;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @Table(name = "farmer_payment_accounts")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // Satisfies JPA protected constructor
-public class FarmerPaymentAccount {
+public class FarmerPaymentAccount extends CreationAuditedEntity {
 
     public enum AccountType { MOBILE_MONEY, BANK_TRANSFER }
 

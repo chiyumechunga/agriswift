@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenProvider implements AccessTokenProvider {
@@ -40,7 +41,7 @@ public class JwtTokenProvider implements AccessTokenProvider {
                 .claim("username", principal.username())
                 .claim("email", principal.email())
                 .claim("roles", principal.roles())
-                .claim("depotId", principal.depotId() != null ? principal.depotId().toString() : null)
+                .claim("depotId", principal.depotId())   // Integer -> JSON number; JJWT omits null claims
                 .claim("principalType", principal.principalType().name())
                 .issuedAt(now)
                 .expiration(expiry)
@@ -71,10 +72,13 @@ public class JwtTokenProvider implements AccessTokenProvider {
         UUID farmerId = farmerIdStr != null ? UUID.fromString(farmerIdStr) : null;
         String username = claims.get("username", String.class);
         String email = claims.get("email", String.class);
-        List<String> rolesList = claims.get("roles", List.class);
-        Set<String> roles = rolesList != null ? Set.copyOf(rolesList) : Set.of();
-        String depotIdStr = claims.get("depotId", String.class);
-        UUID depotId = depotIdStr != null ? UUID.fromString(depotIdStr) : null;
+
+        Object rolesClaim = claims.get("roles");
+        Set<String> roles = rolesClaim instanceof List<?> list
+                ? list.stream().map(String::valueOf).collect(Collectors.toUnmodifiableSet())
+                : Set.of();
+
+        Integer depotId = claims.get("depotId", Integer.class);
         String typeStr = claims.get("principalType", String.class);
         PrincipalType principalType = typeStr != null ? PrincipalType.valueOf(typeStr) : PrincipalType.STAFF;
 
