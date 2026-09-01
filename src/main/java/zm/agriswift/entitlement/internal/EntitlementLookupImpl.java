@@ -22,7 +22,7 @@ class EntitlementLookupImpl implements EntitlementLookup {
         return entitlementRepository.findById(entitlementId)
                 .map(e -> new EntitlementView(
                         e.getEntitlementId(),
-                        e.getFarmer().getFarmerId(),
+                        e.getFarmerId(),
                         e.getPaymentAmount(),
                         e.getValidationStatus().name()));
     }

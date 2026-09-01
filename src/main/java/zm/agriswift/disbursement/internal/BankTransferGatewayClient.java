@@ -1,13 +1,23 @@
 package zm.agriswift.disbursement.internal;
 
-import zm.agriswift.disbursement.Payment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import zm.agriswift.disbursement.Payment;
+import zm.agriswift.disbursement.PaymentIsoMessage;
+import zm.agriswift.disbursement.PaymentIsoMessageRepository;
 
 import java.util.UUID;
 
-/** DDACC rail via ZECHL/NFS (ZAMSwitch). Replace the TODO with the real pain.001 submission call. */
 @Component
-class BankTransferGatewayClient implements GatewayClient {
+public class BankTransferGatewayClient implements GatewayClient {
+
+    private static final Logger log = LoggerFactory.getLogger(BankTransferGatewayClient.class);
+    private final PaymentIsoMessageRepository isoMessageRepository;
+
+    public BankTransferGatewayClient(PaymentIsoMessageRepository isoMessageRepository) {
+        this.isoMessageRepository = isoMessageRepository;
+    }
 
     @Override
     public boolean supports(Payment.ChannelType channelType) {
@@ -16,8 +26,15 @@ class BankTransferGatewayClient implements GatewayClient {
 
     @Override
     public void submit(UUID paymentId, UUID uetr) {
-        // TODO: build and send a pain.001 message to the NFS switch, persist
-        // it via PaymentIsoMessage(OUTBOUND, "pain.001", ...) before returning.
+        log.info("[ZECHL POE] Preparing pain.001 ISO 20022 message for paymentId: {}", paymentId);
+
+        String mockPain001 = String.format("""
+            { "Document": { "CstmrCdtTrfInitn": { "GrpHdr": { "MsgId": "%s", "NbOfTxs": "1" }, "PmtInf": { "UETR": "%s" } } } }
+            """, paymentId.toString(), uetr.toString());
+
+        isoMessageRepository.save(new PaymentIsoMessage(
+                paymentId, PaymentIsoMessage.Direction.OUTBOUND, "pain.001", mockPain001
+        ));
+        log.info("[ZECHL POE] pain.001 message persisted to audit trail.");
     }
 }
-

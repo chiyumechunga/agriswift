@@ -16,9 +16,11 @@ public class PaymentEvent extends CreationAuditedEntity {
     @Column(name = "event_id")
     private UUID eventId;
 
+    @Getter
     @Column(name = "payment_id", nullable = false)
     private UUID paymentId;
 
+    @Getter
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false)
     private Payment.Status eventType;
@@ -28,6 +30,7 @@ public class PaymentEvent extends CreationAuditedEntity {
 
     @Column(name = "metadata", columnDefinition = "jsonb")
     private String metadataJson;
+
 
     protected PaymentEvent() {
         // JPA

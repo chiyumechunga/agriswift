@@ -2,7 +2,6 @@ package zm.agriswift.entitlement;
 
 import lombok.Getter;
 import zm.agriswift.common.CreationAuditedEntity;
-import zm.agriswift.farmer.domain.Farmer;
 import zm.agriswift.referencedata.CropPrice;
 import zm.agriswift.referencedata.CropType;
 import zm.agriswift.referencedata.Depot;
@@ -13,14 +12,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/**
- * A single crop-delivery event at a depot. {@code paymentAmount} and
- * {@code moistureCheckPassed} are computed in the service layer (FR-13,
- * SRS §6.2.1) and re-verified by a DB trigger as a defense-in-depth net —
- * see {@code calculate_entitlement_payment()} in the Flyway migration.
- * A rejected (too-wet) delivery is still recorded, never discarded, so
- * FR-14's audit trail includes farmers turned away at the depot.
- */
 @Entity
 @Table(name = "entitlements")
 public class Entitlement extends CreationAuditedEntity {
@@ -32,11 +23,16 @@ public class Entitlement extends CreationAuditedEntity {
     @Column(name = "entitlement_id")
     private UUID entitlementId;
 
+    /**
+     * ID-only reference. The Farmer aggregate is internal to the farmer module
+     * (Spring Modulith: never import another module's domain entity).
+     * The FK to farmers(farmer_id) stays enforced at DB level by the migration.
+     */
     @Getter
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "farmer_id", nullable = false)
-    private Farmer farmer;
+    @Column(name = "farmer_id", nullable = false)
+    private UUID farmerId;
 
+    // referencedata entities live in their module's exposed root package, so these are legal
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "depot_id", nullable = false)
     private Depot depot;
@@ -55,6 +51,7 @@ public class Entitlement extends CreationAuditedEntity {
     @Column(name = "moisture_content_pct", precision = 4, scale = 2)
     private BigDecimal moistureContentPct;
 
+    @Getter
     @Column(name = "moisture_check_passed")
     private Boolean moistureCheckPassed;
 
@@ -77,11 +74,11 @@ public class Entitlement extends CreationAuditedEntity {
         // JPA
     }
 
-    public Entitlement(UUID entitlementId, Farmer farmer, Depot depot, CropType cropType,
+    public Entitlement(UUID entitlementId, UUID farmerId, Depot depot, CropType cropType,
                        CropPrice cropPrice, BigDecimal cropWeightKg, BigDecimal moistureContentPct,
                        LocalDate deliveryDate) {
         this.entitlementId = entitlementId;
-        this.farmer = farmer;
+        this.farmerId = farmerId;
         this.depot = depot;
         this.cropType = cropType;
         this.cropPrice = cropPrice;
@@ -95,7 +92,7 @@ public class Entitlement extends CreationAuditedEntity {
         BigDecimal maxMoisture = cropPrice.getMaxMoisturePct();
         this.moistureCheckPassed = moistureContentPct == null || maxMoisture == null
                 || moistureContentPct.compareTo(maxMoisture) <= 0;
-        this.paymentAmount = Boolean.TRUE.equals(moistureCheckPassed)
+        this.paymentAmount = moistureCheckPassed
                 ? cropWeightKg.multiply(cropPrice.getPricePerKg())
                 : BigDecimal.ZERO;
     }
@@ -106,5 +103,4 @@ public class Entitlement extends CreationAuditedEntity {
                 : ValidationStatus.REJECTED;
         this.validatedAt = Instant.now();
     }
-
 }
