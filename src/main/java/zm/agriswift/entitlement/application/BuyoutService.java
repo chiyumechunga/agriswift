@@ -2,13 +2,13 @@ package zm.agriswift.entitlement.internal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import zm.agriswift.entitlement.CropBuyoutRecorded;
-import zm.agriswift.entitlement.Entitlement;
-import zm.agriswift.entitlement.EntitlementRepository;
+import zm.agriswift.entitlement.api.CropBuyoutRecorded;
+import zm.agriswift.entitlement.domain.Entitlement;
+import zm.agriswift.entitlement.domain.EntitlementRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import zm.agriswift.entitlement.ZiamisRegistryPort;
+import zm.agriswift.entitlement.domain.ZiamisRegistryPort;
 
 /**
  * Validates a recorded delivery and, on success, publishes

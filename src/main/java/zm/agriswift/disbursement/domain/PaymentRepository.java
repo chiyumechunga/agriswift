@@ -1,6 +1,7 @@
 package zm.agriswift.disbursement;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import zm.agriswift.disbursement.domain.Payment;
 
 import java.util.List;
 import java.util.Optional;

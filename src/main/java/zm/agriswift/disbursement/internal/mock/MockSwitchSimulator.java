@@ -6,9 +6,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import zm.agriswift.disbursement.Payment;
+import zm.agriswift.disbursement.domain.Payment;
 import zm.agriswift.disbursement.PaymentEvent;
-import zm.agriswift.disbursement.PaymentRepository;
+import zm.agriswift.disbursement.domain.PaymentRepository;
 import zm.agriswift.disbursement.StatusCallbackRequest;
 
 import java.util.concurrent.TimeUnit;

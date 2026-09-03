@@ -1,10 +1,10 @@
 package zm.agriswift.disbursement.internal;
 
-import zm.agriswift.disbursement.Payment;
+import zm.agriswift.disbursement.domain.Payment;
 import zm.agriswift.disbursement.PaymentEvent;
 import zm.agriswift.disbursement.PaymentEventRepository;
-import zm.agriswift.disbursement.PaymentRepository;
-import zm.agriswift.disbursement.PaymentStatusChanged;
+import zm.agriswift.disbursement.domain.PaymentRepository;
+import zm.agriswift.disbursement.api.PaymentStatusChanged;
 import zm.agriswift.disbursement.StatusCallbackRequest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;

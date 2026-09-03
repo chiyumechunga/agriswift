@@ -1,10 +1,10 @@
 package zm.agriswift.disbursement.internal;
 
-import zm.agriswift.disbursement.Payment;
+import zm.agriswift.disbursement.domain.Payment;
 import zm.agriswift.disbursement.PaymentEvent;
 import zm.agriswift.disbursement.PaymentEventRepository;
-import zm.agriswift.disbursement.PaymentRepository;
-import zm.agriswift.entitlement.CropBuyoutRecorded;
+import zm.agriswift.disbursement.domain.PaymentRepository;
+import zm.agriswift.entitlement.api.CropBuyoutRecorded;
 import zm.agriswift.farmer.api.FarmerDirectory;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;

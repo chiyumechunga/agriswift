@@ -3,7 +3,8 @@ package zm.agriswift.disbursement.internal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import zm.agriswift.disbursement.Payment;
+import zm.agriswift.disbursement.domain.GatewayClient;
+import zm.agriswift.disbursement.domain.Payment;
 import java.util.UUID;
 
 @Component

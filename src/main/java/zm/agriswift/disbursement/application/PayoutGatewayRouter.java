@@ -1,10 +1,10 @@
 package zm.agriswift.disbursement.internal;
 
-import zm.agriswift.disbursement.Payment;
+import zm.agriswift.disbursement.domain.GatewayClient;
+import zm.agriswift.disbursement.domain.Payment;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.UUID;
 
 /** "Payout gateway router" box: picks bank transfer vs. mobile money and hands off to the matching client. */
 @Component

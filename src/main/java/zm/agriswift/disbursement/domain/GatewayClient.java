@@ -1,5 +1,7 @@
 package zm.agriswift.disbursement.internal;
 
+import zm.agriswift.disbursement.domain.Payment;
+
 import java.util.UUID;
 
 /**
@@ -10,7 +12,7 @@ import java.util.UUID;
  */
 public interface GatewayClient {
 
-    boolean supports(zm.agriswift.disbursement.Payment.ChannelType channelType);
+    boolean supports(Payment.ChannelType channelType);
 
     /** Submits the payment instruction and returns immediately; does not block for settlement. */
     void submit(UUID paymentId, UUID uetr);
