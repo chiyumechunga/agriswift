@@ -1,4 +1,4 @@
-package zm.agriswift.disbursement;
+package zm.agriswift.disbursement.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -36,8 +36,8 @@
 @org.springframework.modulith.ApplicationModule(
         allowedDependencies = {
                 "common",        // For BaseEntity, DomainException, etc.
-                "disbursement",  // To listen to PaymentStatusChanged events
-                "entitlement"    // To listen to CropBuyoutRecorded events
+                "disbursement::api",  // To listen to PaymentStatusChanged events
+                "entitlement::api"    // To listen to CropBuyoutRecorded events
         }
 )
 package zm.agriswift.blockchain;

@@ -1,5 +1,5 @@
 package zm.agriswift.notification.internal;
-import zm.agriswift.disbursement.PaymentStatusChanged;
+import zm.agriswift.disbursement.api.PaymentStatusChanged;
 import zm.agriswift.notification.Notification;
 import zm.agriswift.notification.NotificationRepository;
 import org.springframework.modulith.events.ApplicationModuleListener;

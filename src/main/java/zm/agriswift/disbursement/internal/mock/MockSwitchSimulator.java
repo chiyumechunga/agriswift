@@ -1,4 +1,4 @@
-package zm.agriswift.disbursement.internal;
+package zm.agriswift.disbursement.internal.mock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,9 +7,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import zm.agriswift.disbursement.domain.Payment;
-import zm.agriswift.disbursement.PaymentEvent;
+import zm.agriswift.disbursement.domain.PaymentEvent;
 import zm.agriswift.disbursement.domain.PaymentRepository;
-import zm.agriswift.disbursement.StatusCallbackRequest;
+import zm.agriswift.disbursement.web.StatusCallbackRequest;
+import zm.agriswift.disbursement.web.StatusCallbackController;
 
 import java.util.concurrent.TimeUnit;
 

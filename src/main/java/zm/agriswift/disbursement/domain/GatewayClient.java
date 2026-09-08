@@ -1,6 +1,4 @@
-package zm.agriswift.disbursement.internal;
-
-import zm.agriswift.disbursement.domain.Payment;
+package zm.agriswift.disbursement.domain;
 
 import java.util.UUID;
 

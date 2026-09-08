@@ -2,10 +2,9 @@ package zm.agriswift.farmer.web.dto;
 
 import jakarta.validation.constraints.*;
 import zm.agriswift.farmer.domain.OnboardingChannel;
-import zm.agriswift.farmer.service.FarmerRegistrationCommand;
+import zm.agriswift.farmer.application.FarmerRegistrationCommand;
 
 import java.time.LocalDate;
-import java.util.Map;
 import java.util.UUID;
 
 public record RegisterFarmerRequest(

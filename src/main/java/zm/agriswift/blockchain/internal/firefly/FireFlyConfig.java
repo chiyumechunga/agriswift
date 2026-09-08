@@ -12,15 +12,10 @@ import zm.agriswift.blockchain.internal.FireFlyProperties;
 @EnableConfigurationProperties(FireFlyProperties.class)
 public class FireFlyConfig {
 
-    /**
-     * Self-contained FireFly REST client.
-     * We build the WebClient directly instead of injecting the autoconfigured
-     * WebClient.Builder, keeping this module independent of global autoconfiguration.
-     */
     @Bean
     public WebClient fireflyWebClient(FireFlyProperties properties) {
         return WebClient.builder()
-                .baseUrl(properties.restUrl() + "/api/v1/namespaces/" + properties.namespace())
+                .baseUrl(properties.getRestUrl() + "/api/v1/namespaces/" + properties.getNamespace())
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }

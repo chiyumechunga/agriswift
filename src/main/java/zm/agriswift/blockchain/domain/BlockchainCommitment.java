@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.Instant;
 import java.util.Objects;
 
@@ -23,9 +26,9 @@ public class BlockchainCommitment {
     @Column(name = "entity_id", nullable = false)
     private String entityId;
 
-    @Lob
-    @Column(name = "payload_json", nullable = false)
-    private String payloadJson; // Kept locally for future VerifyAnchor calls
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR) // Tells Hibernate to use text/varchar, not OID
+    @Column(name = "payload_json", columnDefinition = "text")
+    private String payloadJson;
 
     @Column(name = "payload_hash", nullable = false)
     private String payloadHash;

@@ -1,4 +1,4 @@
-package zm.agriswift.entitlement.internal;
+package zm.agriswift.entitlement.application;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

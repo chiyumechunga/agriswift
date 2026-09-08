@@ -1,4 +1,6 @@
-package zm.agriswift.disbursement;
+package zm.agriswift.disbursement.api;
+
+import zm.agriswift.disbursement.domain.Payment;
 
 import java.math.BigDecimal;
 import java.util.UUID;

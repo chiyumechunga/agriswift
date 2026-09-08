@@ -1,8 +1,7 @@
-package zm.agriswift.disbursement;
+package zm.agriswift.disbursement.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import zm.agriswift.common.CreationAuditedEntity;
-import zm.agriswift.disbursement.domain.Payment;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package zm.agriswift.disbursement.internal;
+package zm.agriswift.disbursement.internal.mock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,8 +1,7 @@
 package zm.agriswift.entitlement.internal;
 
-import zm.agriswift.entitlement.Entitlement;
-import zm.agriswift.entitlement.EntitlementLookup;
-import zm.agriswift.entitlement.EntitlementRepository;
+import zm.agriswift.entitlement.api.EntitlementLookup;
+import zm.agriswift.entitlement.domain.EntitlementRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;

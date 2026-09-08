@@ -1,4 +1,4 @@
-package zm.agriswift.disbursement;
+package zm.agriswift.disbursement.web;
 
 import java.util.UUID;
 

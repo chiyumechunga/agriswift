@@ -1,4 +1,4 @@
-package zm.agriswift.entitlement;
+package zm.agriswift.entitlement.api;
 import java.util.Optional;
 import java.util.UUID;
 

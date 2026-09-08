@@ -1,6 +1,6 @@
 /**
  * Notification module: SMS/email delivery to farmers. Reacts to
- * {@link zm.agriswift.disbursement.PaymentStatusChanged} — the "Farmer
+ * {@link zm.agriswift.disbursement.api.PaymentStatusChanged} — the "Farmer
  * notified" box in disbursement_flow.png.
  */
 @org.springframework.modulith.ApplicationModule(

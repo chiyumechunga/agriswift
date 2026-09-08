@@ -1,6 +1,5 @@
-package zm.agriswift.disbursement;
+package zm.agriswift.disbursement.domain;
 import org.springframework.data.jpa.repository.JpaRepository;
-import zm.agriswift.disbursement.domain.PaymentIsoMessage;
 
 import java.util.UUID;
 

@@ -1,4 +1,4 @@
-package zm.agriswift.disbursement.internal;
+package zm.agriswift.disbursement.application;
 
 import zm.agriswift.disbursement.domain.GatewayClient;
 import zm.agriswift.disbursement.domain.Payment;

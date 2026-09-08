@@ -1,25 +1,34 @@
 package zm.agriswift.blockchain.internal.websocket;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
+import zm.agriswift.blockchain.internal.FireFlyProperties;
 
+import java.util.Map;
+
+@Component
 public class FireFlyProtocol {
-    public record StartCommand(
-            @JsonProperty("type") String type,
-            @JsonProperty("namespace") String namespace,
-            @JsonProperty("name") String name,
-            @JsonProperty("ephemeral") boolean ephemeral
-    ) {
-        public static StartCommand create(String namespace, String name) {
-            return new StartCommand("start", namespace, name, false);
-        }
+
+    private final FireFlyProperties properties;
+    private final ObjectMapper objectMapper;
+
+    public FireFlyProtocol(FireFlyProperties properties, ObjectMapper objectMapper) {
+        this.properties = properties;
+        this.objectMapper = objectMapper;
     }
 
-    public record AckCommand(
-            @JsonProperty("type") String type,
-            @JsonProperty("id") String id
-    ) {
-        public static AckCommand forEvent(String eventId) {
-            return new AckCommand("ack", eventId);
-        }
+    public String startMessage() {
+        return objectMapper.writeValueAsString(Map.of(
+                "type", "start",
+                "namespace", properties.getNamespace(),
+                "name", properties.getSubscriptionName()
+        ));
+    }
+
+    public String ackMessage(String eventId) {
+        return objectMapper.writeValueAsString(Map.of(
+                "type", "ack",
+                "id", eventId
+        ));
     }
 }

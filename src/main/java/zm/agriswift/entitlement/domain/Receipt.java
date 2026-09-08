@@ -1,9 +1,8 @@
-package zm.agriswift.entitlement;
+package zm.agriswift.entitlement.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import zm.agriswift.common.CreationAuditedEntity;
-import zm.agriswift.entitlement.domain.Entitlement;
 
 import java.time.Instant;
 import java.util.UUID;

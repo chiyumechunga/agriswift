@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.*;
 import zm.agriswift.farmer.api.FarmerDirectory;
 import zm.agriswift.farmer.api.dto.FarmerSummary;
 import zm.agriswift.farmer.api.dto.PreferredPayoutAccount;
-import zm.agriswift.farmer.service.FarmerRegistrationService;
-import zm.agriswift.farmer.service.KycService;
-import zm.agriswift.farmer.service.FarmerPaymentService;
+import zm.agriswift.farmer.application.FarmerRegistrationService;
+import zm.agriswift.farmer.application.KycService;
+import zm.agriswift.farmer.application.FarmerPaymentService;
 import zm.agriswift.farmer.web.dto.KycVerificationRequest;
 import zm.agriswift.farmer.web.dto.RegisterFarmerRequest;
 

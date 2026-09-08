@@ -1,6 +1,6 @@
 package zm.agriswift.ledger.internal;
-import zm.agriswift.disbursement.Payment;
-import zm.agriswift.disbursement.PaymentStatusChanged;
+import zm.agriswift.disbursement.domain.Payment;
+import zm.agriswift.disbursement.api.PaymentStatusChanged;
 import zm.agriswift.ledger.LedgerEntry;
 import zm.agriswift.ledger.LedgerEntryRepository;
 import org.springframework.modulith.events.ApplicationModuleListener;

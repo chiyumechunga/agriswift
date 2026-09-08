@@ -1,4 +1,4 @@
-package zm.agriswift.farmer.service;
+package zm.agriswift.farmer.application;
 
 import zm.agriswift.farmer.domain.OnboardingChannel;
 

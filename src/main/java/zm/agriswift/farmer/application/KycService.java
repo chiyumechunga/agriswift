@@ -1,4 +1,4 @@
-package zm.agriswift.farmer.service;
+package zm.agriswift.farmer.application;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

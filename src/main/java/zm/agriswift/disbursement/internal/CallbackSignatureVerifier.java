@@ -1,6 +1,6 @@
 package zm.agriswift.disbursement.internal;
 
-import zm.agriswift.disbursement.StatusCallbackRequest;
+import zm.agriswift.disbursement.web.StatusCallbackRequest;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
  * before this endpoint is exposed outside a trusted network.
  */
 @Component
-class CallbackSignatureVerifier {
+public class CallbackSignatureVerifier {
 
-    boolean isValid(StatusCallbackRequest request) {
+    public boolean isValid(StatusCallbackRequest request) {
         return request.signature() != null && !request.signature().isBlank();
     }
 }

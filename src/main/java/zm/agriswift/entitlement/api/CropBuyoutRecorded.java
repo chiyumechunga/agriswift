@@ -1,4 +1,4 @@
-package zm.agriswift.entitlement;
+package zm.agriswift.entitlement.api;
 
 import java.math.BigDecimal;
 import java.util.UUID;

@@ -2,16 +2,17 @@ package zm.agriswift.blockchain.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import zm.agriswift.blockchain.api.AnchorNotarized;
-import zm.agriswift.blockchain.domain.BlockchainCommitment;
 import zm.agriswift.blockchain.domain.BlockchainCommitmentRepository;
 
 @Slf4j
 @Service
+@NullMarked
 @RequiredArgsConstructor
 public class AnchorEventHandlerService {
 
@@ -19,15 +20,9 @@ public class AnchorEventHandlerService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public void handleAnchorRecorded(@org.jetbrains.annotations.UnknownNullability JsonNode event) {
-        // DTO helper safely unwraps FireFly's FFI envelope (data / data.data / data.value)
-        JsonNode eventData = event.getAnchorPayload();
+    public void handleAnchorRecorded(JsonNode blockchainEvent) {
+        JsonNode eventData = unwrapAnchorPayload(blockchainEvent);
 
-        if (eventData == null || eventData.isNull()) {
-            throw new IllegalArgumentException("FireFly event missing anchor payload");
-        }
-
-        // Jackson 3: asText() was renamed to asString()
         String anchorId = eventData.path("anchorId").asString();
         String onChainHash = eventData.path("payloadHash").asString();
 
@@ -35,15 +30,13 @@ public class AnchorEventHandlerService {
             throw new IllegalArgumentException("Missing anchorId in FireFly event payload");
         }
 
-        BlockchainCommitment commitment = repository.findByAnchorId(anchorId)
+        var commitment = repository.findByAnchorId(anchorId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Received AnchorRecorded for unknown local anchor: " + anchorId));
 
-        // Idempotent state update (verifies hash, ignores duplicates)
         commitment.markCommitted(onChainHash);
         repository.save(commitment);
 
-        // Shout to the rest of the Modular Monolith
         eventPublisher.publishEvent(new AnchorNotarized(
                 commitment.getAnchorId(),
                 commitment.getAnchorType(),
@@ -52,6 +45,18 @@ public class AnchorEventHandlerService {
                 commitment.getCommittedAt()
         ));
 
-        log.info("Anchor {} committed on-chain.", anchorId);
+        log.info("Anchor {} committed on-chain (hash={}).", anchorId, onChainHash);
+    }
+
+    /** Unwraps FireFly's FFI envelope: output.data / output.data.data / output.data.value / output inline. */
+    private JsonNode unwrapAnchorPayload(JsonNode blockchainEvent) {
+        JsonNode output = blockchainEvent.path("output");
+        JsonNode data = output.path("data");
+        if (data.isObject()) {
+            if (data.path("data").isObject()) return data.path("data");
+            if (data.path("value").isObject()) return data.path("value");
+            return data;
+        }
+        return output;
     }
 }

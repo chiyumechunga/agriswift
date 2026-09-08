@@ -1,4 +1,4 @@
-package zm.agriswift.entitlement;
+package zm.agriswift.entitlement.domain;
 
 import java.util.UUID;
 

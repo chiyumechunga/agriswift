@@ -1,9 +1,8 @@
 package zm.agriswift.blockchain.internal.websocket;
 
-// Annotations: Jackson 3 KEEPS the old package name
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-// Databind: Jackson 3 NEW package name
 import tools.jackson.databind.JsonNode;
 
 @JsonIgnoreProperties(ignoreUnknown = true)

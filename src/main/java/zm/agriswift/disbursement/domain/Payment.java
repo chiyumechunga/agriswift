@@ -1,10 +1,9 @@
-package zm.agriswift.disbursement;
+package zm.agriswift.disbursement.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import zm.agriswift.common.BaseEntity;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
 /**

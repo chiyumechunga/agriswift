@@ -1,11 +1,10 @@
-package zm.agriswift.disbursement.internal;
+package zm.agriswift.disbursement.web;
 
 import zm.agriswift.disbursement.domain.Payment;
-import zm.agriswift.disbursement.PaymentEvent;
-import zm.agriswift.disbursement.PaymentEventRepository;
+import zm.agriswift.disbursement.domain.PaymentEvent;
+import zm.agriswift.disbursement.domain.PaymentEventRepository;
 import zm.agriswift.disbursement.domain.PaymentRepository;
 import zm.agriswift.disbursement.api.PaymentStatusChanged;
-import zm.agriswift.disbursement.StatusCallbackRequest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import zm.agriswift.disbursement.internal.CallbackSignatureVerifier;
 
 /**
  * "Async status callback" box: the NFS switch / MNO calls back here once the
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/disbursement/callbacks")
-class StatusCallbackController {
+public class StatusCallbackController {
 
     private final PaymentRepository paymentRepository;
     private final PaymentEventRepository paymentEventRepository;
@@ -41,7 +41,7 @@ class StatusCallbackController {
 
     @PostMapping("/zechl")
     @Transactional
-    ResponseEntity<Void> onZechlCallback(@RequestBody StatusCallbackRequest request) {
+    public ResponseEntity<Void> onZechlCallback(@RequestBody StatusCallbackRequest request) {
         if (!signatureVerifier.isValid(request)) {
             return ResponseEntity.status(401).build();
         }

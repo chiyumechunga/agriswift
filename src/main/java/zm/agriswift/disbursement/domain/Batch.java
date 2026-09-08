@@ -1,11 +1,10 @@
-package zm.agriswift.disbursement;
+package zm.agriswift.disbursement.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import zm.agriswift.common.CreationAuditedEntity;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
 /** Batches a set of payments under one treasury-facing reference (FR-33). */

@@ -1,4 +1,4 @@
-package zm.agriswift.disbursement.internal;
+package zm.agriswift.disbursement.internal.bank;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import zm.agriswift.disbursement.domain.GatewayClient;
 import zm.agriswift.disbursement.domain.Payment;
 import zm.agriswift.disbursement.domain.PaymentIsoMessage;
-import zm.agriswift.disbursement.PaymentIsoMessageRepository;
+import zm.agriswift.disbursement.domain.PaymentIsoMessageRepository;
 
 import java.util.UUID;
 

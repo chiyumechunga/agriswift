@@ -1,7 +1,6 @@
-package zm.agriswift.entitlement;
+package zm.agriswift.entitlement.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import zm.agriswift.entitlement.domain.Receipt;
 
 import java.util.UUID;
 
