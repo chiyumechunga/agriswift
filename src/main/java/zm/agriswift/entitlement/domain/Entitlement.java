@@ -67,6 +67,7 @@ public class Entitlement extends CreationAuditedEntity {
     @Column(name = "validated_at")
     private Instant validatedAt;
 
+    @Getter
     @Column(name = "delivery_date", nullable = false)
     private LocalDate deliveryDate;
 

@@ -5,6 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface EntitlementRepository extends JpaRepository<Entitlement, UUID> {
-    List<Entitlement> findByFarmer_FarmerId(UUID farmerId);
+    List<Entitlement> findByFarmerId(UUID farmerId);
 }
 

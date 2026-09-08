@@ -8,6 +8,6 @@
  * it never calls those modules directly.
  */
 @org.springframework.modulith.ApplicationModule(
-        allowedDependencies = {"common", "farmer::api", "entitlement::api", "referencedata"}
+        allowedDependencies = {"common", "farmer::api", "farmer::dto","entitlement::api", "referencedata"}
 )
 package zm.agriswift.disbursement;
