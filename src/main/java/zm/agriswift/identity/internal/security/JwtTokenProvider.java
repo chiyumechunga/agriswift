@@ -6,6 +6,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import zm.agriswift.identity.api.AccessTokenIssuer;
+import zm.agriswift.identity.api.AccessTokenVerifier;
+import zm.agriswift.identity.api.dto.IssuedTokens;
 import zm.agriswift.identity.api.dto.PrincipalType;
 import zm.agriswift.identity.api.dto.UserPrincipal;
 
@@ -13,12 +16,13 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
-public class JwtTokenProvider implements AccessTokenProvider {
+public class JwtTokenProvider implements AccessTokenIssuer, AccessTokenVerifier {
 
     private final SecretKey secretKey;
     private final long accessTokenExpirationMs;
@@ -31,7 +35,27 @@ public class JwtTokenProvider implements AccessTokenProvider {
     }
 
     @Override
-    public String generateToken(UserPrincipal principal) {
+    public IssuedTokens issue(UserPrincipal principal) {
+        String token = generateToken(principal);
+        // Access tokens don't contain the refresh token. The Auth Service will merge them later.
+        return new IssuedTokens(token, null, accessTokenExpirationMs / 1000);
+    }
+
+    @Override
+    public Optional<UserPrincipal> verify(String rawToken) {
+        if (!validateToken(rawToken)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(getUserPrincipalFromToken(rawToken));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    // --- Private Implementation Details ---
+
+    private String generateToken(UserPrincipal principal) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + accessTokenExpirationMs);
 
@@ -41,7 +65,7 @@ public class JwtTokenProvider implements AccessTokenProvider {
                 .claim("username", principal.username())
                 .claim("email", principal.email())
                 .claim("roles", principal.roles())
-                .claim("depotId", principal.depotId())   // Integer -> JSON number; JJWT omits null claims
+                .claim("depotId", principal.depotId())
                 .claim("principalType", principal.principalType().name())
                 .issuedAt(now)
                 .expiration(expiry)
@@ -49,8 +73,7 @@ public class JwtTokenProvider implements AccessTokenProvider {
                 .compact();
     }
 
-    @Override
-    public boolean validateToken(String token) {
+    private boolean validateToken(String token) {
         try {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
             return true;
@@ -59,8 +82,7 @@ public class JwtTokenProvider implements AccessTokenProvider {
         }
     }
 
-    @Override
-    public UserPrincipal getUserPrincipalFromToken(String token) {
+    private UserPrincipal getUserPrincipalFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(secretKey)
                 .build()

@@ -22,6 +22,6 @@
  * DIP (depends on abstractions), ISP (external modules get only what they need).
  */
 @org.springframework.modulith.ApplicationModule(
-        allowedDependencies = {"common", "referencedata", "farmer", "farmer :: farmer", "farmer :: dto"}  // now depends on farmer for lookup
+        allowedDependencies = {"common", "referencedata", "farmer", "farmer :: farmer", "farmer :: dto", "farmer :: api"}  // now depends on farmer for lookup
 )
 package zm.agriswift.identity;

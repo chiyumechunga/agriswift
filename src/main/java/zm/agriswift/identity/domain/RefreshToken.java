@@ -33,6 +33,7 @@ public class RefreshToken {
     @Column(name = "token", nullable = false, unique = true, length = 128)
     private String token;
 
+    @Getter
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 

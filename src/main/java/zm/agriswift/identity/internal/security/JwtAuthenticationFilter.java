@@ -1,6 +1,5 @@
 package zm.agriswift.identity.internal.security;
 
-import zm.agriswift.identity.api.dto.UserPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +12,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import zm.agriswift.identity.api.AccessTokenVerifier;
+import zm.agriswift.identity.api.dto.UserPrincipal;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
@@ -20,10 +21,10 @@ import java.util.stream.Collectors;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtTokenProvider tokenProvider;
+    private final AccessTokenVerifier verifier; // DIP: Depends on the port, not the concrete class
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
-        this.tokenProvider = tokenProvider;
+    public JwtAuthenticationFilter(AccessTokenVerifier verifier) {
+        this.verifier = verifier;
     }
 
     @Override
@@ -34,19 +35,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String jwt = parseJwt(request);
 
-        if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
-            UserPrincipal userPrincipal = tokenProvider.getUserPrincipalFromToken(jwt);
+        if (StringUtils.hasText(jwt)) {
+            // Use the port's Optional return type
+            verifier.verify(jwt).ifPresent(userPrincipal -> {
+                var authorities = userPrincipal.roles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .collect(Collectors.toSet());
 
-            var authorities = userPrincipal.roles().stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                    .collect(Collectors.toSet());
+                SecurityUser securityUser = new SecurityUser(userPrincipal, "");
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(securityUser, null, authorities);
 
-            SecurityUser securityUser = new SecurityUser(userPrincipal, "");
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(securityUser, null, authorities);
-
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            });
         }
 
         filterChain.doFilter(request, response);
