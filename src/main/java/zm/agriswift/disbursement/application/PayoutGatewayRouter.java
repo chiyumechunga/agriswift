@@ -18,11 +18,12 @@ class PayoutGatewayRouter {
 
     void route(Payment payment) {
         GatewayClient client = clients.stream()
-                .filter(c -> c.supports(payment.getChannelType()))
+                .filter(c -> c.supports(payment))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
-                        "No gateway client registered for channel " + payment.getChannelType()));
-        client.submit(payment.getPaymentId(), payment.getUetr());
+                        "No gateway client registered for channel " + payment.getChannelType()
+                                + ", provider " + payment.getProviderId()));
+        client.submit(payment);
         payment.markExecuted();
     }
 }

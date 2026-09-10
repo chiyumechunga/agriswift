@@ -30,12 +30,15 @@ public class Payment extends BaseEntity {
     @Column(name = "farmer_id", nullable = false)
     private UUID farmerId;
 
+    @Getter
     @Column(name = "entitlement_id", nullable = false)
     private UUID entitlementId;
 
+    @Getter
     @Column(name = "payment_account_id", nullable = false)
     private UUID paymentAccountId;
 
+    @Getter
     @Column(name = "batch_id")
     private UUID batchId;
 
@@ -52,6 +55,7 @@ public class Payment extends BaseEntity {
     @Column(name = "channel_type", nullable = false)
     private ChannelType channelType;
 
+    @Getter
     @Column(name = "provider_id", nullable = false)
     private Short providerId;
 
@@ -64,9 +68,11 @@ public class Payment extends BaseEntity {
     @Column(name = "uetr", nullable = false, unique = true)
     private UUID uetr; //Unique End-to-End Transaction Reference
 
+    @Getter
     @Column(name = "retry_count", nullable = false)
     private short retryCount = 0;
 
+    @Getter
     @Column(name = "failure_reason")
     private String failureReason;
 
