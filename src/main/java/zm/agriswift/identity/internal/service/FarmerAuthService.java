@@ -7,12 +7,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import zm.agriswift.farmer.api.FarmerDirectory;
 import zm.agriswift.farmer.api.dto.FarmerSummary;
+import zm.agriswift.identity.api.AccessTokenIssuer;
 import zm.agriswift.identity.api.dto.PrincipalType;
 import zm.agriswift.identity.api.dto.UserPrincipal;
 import zm.agriswift.identity.domain.FarmerCredential;
 import zm.agriswift.identity.internal.repository.FarmerCredentialRepository;
 import zm.agriswift.identity.internal.repository.RefreshTokenRepository;
-import zm.agriswift.identity.internal.security.AccessTokenProvider;
 
 import java.util.Set;
 import java.util.UUID;
@@ -30,11 +30,11 @@ public class FarmerAuthService extends AbstractAuthService {
 
     public FarmerAuthService(FarmerCredentialRepository credentialRepository,
                              PasswordEncoder pinEncoder,
-                             AccessTokenProvider tokenProvider,
+                             AccessTokenIssuer tokenIssuer,
                              RefreshTokenRepository refreshTokenRepository,
                              FarmerDirectory farmerDirectory,
                              @Value("${agriswift.jwt.refresh-token-expiration-ms:604800000}") long refreshTokenExpirationMs) {
-        super(refreshTokenRepository, tokenProvider, refreshTokenExpirationMs);
+        super(refreshTokenRepository, tokenIssuer, refreshTokenExpirationMs);
         this.credentialRepository = credentialRepository;
         this.pinEncoder = pinEncoder;
         this.farmerDirectory = farmerDirectory;
@@ -52,7 +52,6 @@ public class FarmerAuthService extends AbstractAuthService {
                 .or(() -> farmerDirectory.findByNationalId(identifier))
                 .orElseThrow(() -> new BadCredentialsException("Invalid identifier"));
 
-        // FIX 3: farmer_id is the business key now; PK is credential_id
         FarmerCredential credential = credentialRepository.findByFarmerId(farmer.farmerId())
                 .orElseThrow(() -> new BadCredentialsException("No PIN set for this farmer"));
 
@@ -60,7 +59,6 @@ public class FarmerAuthService extends AbstractAuthService {
             throw new BadCredentialsException("Account locked");
         }
 
-        // pin_hash is TEXT now; the entity exposes it as String — no charset bridge needed
         if (!pinEncoder.matches(request.pin(), credential.getPinHash())) {
             credential.recordFailedAttempt(MAX_PIN_ATTEMPTS, LOCK_MINUTES);
             credentialRepository.save(credential);
@@ -81,15 +79,16 @@ public class FarmerAuthService extends AbstractAuthService {
                 PrincipalType.FARMER
         );
 
-        String accessToken = tokenProvider.generateToken(principal);
+        String accessToken = tokenIssuer.issue(principal).accessToken();
         String refreshToken = issueRefreshToken(principal);
 
         return new AuthResponse(accessToken, refreshToken, "Bearer", principal);
     }
 
-
     @Override
-    protected PrincipalType supportedType() { return PrincipalType.FARMER; }
+    protected PrincipalType supportedType() {
+        return PrincipalType.FARMER;
+    }
 
     @Override
     protected UserPrincipal loadPrincipal(UUID userId) {

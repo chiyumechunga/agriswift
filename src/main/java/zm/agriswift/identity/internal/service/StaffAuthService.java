@@ -7,6 +7,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import zm.agriswift.identity.api.AccessTokenIssuer;
+import zm.agriswift.identity.api.RefreshTokenRotator;
+import zm.agriswift.identity.api.dto.IssuedTokens;
 import zm.agriswift.identity.api.dto.PrincipalType;
 import zm.agriswift.identity.api.dto.UserPrincipal;
 import zm.agriswift.identity.domain.RefreshToken;
@@ -14,7 +17,6 @@ import zm.agriswift.identity.domain.Role;
 import zm.agriswift.identity.domain.User;
 import zm.agriswift.identity.internal.repository.RefreshTokenRepository;
 import zm.agriswift.identity.internal.repository.UserRepository;
-import zm.agriswift.identity.internal.security.AccessTokenProvider;
 import zm.agriswift.identity.internal.security.RefreshTokenGenerator;
 import zm.agriswift.identity.internal.security.SecurityUser;
 
@@ -24,22 +26,22 @@ import java.util.stream.Collectors;
 
 @Service("staffAuthService")
 @Transactional
-public class StaffAuthService implements AuthService {
+public class StaffAuthService implements AuthService, RefreshTokenRotator {
 
     private final AuthenticationManager authenticationManager;
-    private final AccessTokenProvider tokenProvider;
+    private final AccessTokenIssuer tokenIssuer;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final long refreshTokenExpirationMs;
 
     public StaffAuthService(
             AuthenticationManager authenticationManager,
-            AccessTokenProvider tokenProvider,
+            AccessTokenIssuer tokenIssuer,
             RefreshTokenRepository refreshTokenRepository,
             UserRepository userRepository,
             @Value("${agriswift.jwt.refresh-token-expiration-ms:604800000}") long refreshTokenExpirationMs) {
         this.authenticationManager = authenticationManager;
-        this.tokenProvider = tokenProvider;
+        this.tokenIssuer = tokenIssuer;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
         this.refreshTokenExpirationMs = refreshTokenExpirationMs;
@@ -50,13 +52,12 @@ public class StaffAuthService implements AuthService {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password()));
 
-        // Pattern-matched cast: removes the NPE warning and fails fast on unexpected principals
         if (!(authentication.getPrincipal() instanceof SecurityUser securityUser)) {
             throw new BadCredentialsException("Staff authentication did not produce a SecurityUser");
         }
         UserPrincipal principal = securityUser.getUserPrincipal();
 
-        String accessToken = tokenProvider.generateToken(principal);
+        String accessToken = tokenIssuer.issue(principal).accessToken();
         String refreshToken = issueRefreshToken(principal);
         return new AuthResponse(accessToken, refreshToken, "Bearer", principal);
     }
@@ -66,7 +67,6 @@ public class StaffAuthService implements AuthService {
         RefreshToken stored = refreshTokenRepository.findByToken(RefreshTokenGenerator.hash(presentedToken))
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
-        // Hardening: a farmer token must never be redeemable on the staff path
         if (stored.getPrincipalType() != PrincipalType.STAFF) {
             throw new BadCredentialsException("Invalid refresh token for this principal type");
         }
@@ -77,12 +77,28 @@ public class StaffAuthService implements AuthService {
         }
 
         UserPrincipal principal = loadPrincipal(stored.getUserId());
-        String newAccessToken = tokenProvider.generateToken(principal);
+        String newAccessToken = tokenIssuer.issue(principal).accessToken();
         String newRefreshToken = issueRefreshToken(principal);
         stored.revoke(RefreshTokenGenerator.hash(newRefreshToken), Instant.now());
         refreshTokenRepository.save(stored);
 
         return new AuthResponse(newAccessToken, newRefreshToken, "Bearer", principal);
+    }
+
+    @Override
+    public IssuedTokens rotate(String presentedToken) {
+        AuthResponse response = refresh(presentedToken);
+        return new IssuedTokens(response.accessToken(), response.refreshToken(),
+                refreshTokenExpirationMs / 1000);
+    }
+
+    @Override
+    public void revoke(String presentedToken) {
+        refreshTokenRepository.findByToken(RefreshTokenGenerator.hash(presentedToken))
+                .ifPresent(stored -> {
+                    stored.revoke(null, Instant.now());
+                    refreshTokenRepository.save(stored);
+                });
     }
 
     @Override
@@ -96,7 +112,7 @@ public class StaffAuthService implements AuthService {
                 RefreshTokenGenerator.hash(raw),
                 principal.id(),
                 Instant.now().plusMillis(refreshTokenExpirationMs),
-                principal.principalType()));   // 4th arg: schema's principal_type discriminator
+                principal.principalType()));
         return raw;
     }
 
