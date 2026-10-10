@@ -1,43 +1,28 @@
 /**
  * Blockchain Integration Module (Anti-Corruption Layer).
  *
- * <h2>Architectural Pattern: The "Thin Ledger" (Notarization)</h2>
- * <p>
- * This module serves as the bridge between the Spring Boot domain model and the
- * Hyperledger Fabric distributed ledger, orchestrated via Hyperledger FireFly.
- * It strictly adheres to the "Thin Ledger" pattern: business logic and PII remain
- * in Postgres, while only cryptographic proofs (SHA-256 hashes) are notarized on-chain.
+ * <h2>Resilience: NACK → 3 Retries → Local DLQ</h2>
+ * FireFly has no explicit NACK. The WS handler omits the ACK on failure
+ * (implicit NACK). After 3 local failures the event is parked in
+ * {@code blockchain_failed_events} and ACKed. A
+ * {@code BlockchainRetryScheduler → DlqRecoveryService} pipeline retries
+ * with exponential backoff (60 s → 5 min → 25 min → 2 h → 10 h).
  *
- * <h2>Event-Driven Flow</h2>
- * <ul>
- *   <li><b>Outbound (REST):</b> Listens to internal domain events (e.g., {@code PaymentStatusChanged},
- *       {@code CropBuyoutRecorded}), computes their SHA-256 hash, and submits a
- *       {@code RecordAnchor} transaction to the FireFly Supernode.</li>
- *   <li><b>Inbound (WebSocket):</b> Maintains a persistent WebSocket connection to FireFly
- *       to listen for {@code AnchorRecorded} chaincode events. Upon receipt, it updates
- *       the local {@code BlockchainCommitment} aggregate and sends an {@code ACK} to
- *       advance the FireFly event cursor.</li>
- * </ul>
+ * <h2>Source-of-Truth</h2>
+ * The blockchain hash is authoritative. Local divergence is overwritten
+ * silently with a warning log. No manual intervention.
  *
- * <h2>Resilience & Dead Letter Queue (DLQ)</h2>
- * <p>
- * To prevent blocking the WebSocket stream, business processing exceptions (poison pills)
- * are caught, persisted to a local {@code FailedEvent} DLQ table, and immediately ACKed.
- * A background {@code BlockchainRetryScheduler} periodically attempts to reprocess these
- * failed events without disrupting real-time notarizations.
- *
- * <h2>Module Boundaries</h2>
- * <p>
- * This module depends on the public APIs of {@code disbursement} and {@code entitlement}
- * to listen for events. However, those modules <strong>must never</strong> depend on this
- * blockchain module. Communication back to the core is strictly via the
- * {@link zm.agriswift.blockchain.api.AnchorNotarized} Spring Application Event.
+ * <h2>Modulith Boundaries</h2>
+ * Cross-module communication is exclusively via
+ * {@link zm.agriswift.blockchain.api.AnchorNotarized}, consumed through
+ * {@code @ApplicationModuleListener} and persisted via the Modulith
+ * Event Registry ({@code spring-modulith-events-jdbc}).
  */
 @org.springframework.modulith.ApplicationModule(
         allowedDependencies = {
-                "common",        // For BaseEntity, DomainException, etc.
-                "disbursement::api",  // To listen to PaymentStatusChanged events
-                "entitlement::api"    // To listen to CropBuyoutRecorded events
+                "common",
+                "disbursement::api",
+                "entitlement::api"
         }
 )
 package zm.agriswift.blockchain;

@@ -6,6 +6,6 @@
  * event and takes it from there — entitlement never calls disbursement directly.
  */
 @org.springframework.modulith.ApplicationModule(
-        allowedDependencies = {"common", "farmer::api", "farmer::dto","referencedata"}
+        allowedDependencies = {"common", "farmer::api", "farmer::dto", "referencedata", "identity::api", "identity"}
 )
 package zm.agriswift.entitlement;

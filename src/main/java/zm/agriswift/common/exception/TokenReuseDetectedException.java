@@ -1,4 +1,9 @@
 package zm.agriswift.common.exception;
 
-public class TokenReuseDetectedException {
+import java.util.UUID;
+
+public class TokenReuseDetectedException extends RuntimeException {
+    public TokenReuseDetectedException(UUID userId) {
+        super("Refresh token reuse detected for user " + userId + "; all sessions revoked.");
+    }
 }

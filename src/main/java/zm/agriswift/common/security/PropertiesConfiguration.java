@@ -2,9 +2,10 @@ package zm.agriswift.common.security;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import zm.agriswift.common.jwt.JwtProperties;
 import zm.agriswift.identity.internal.config.AuthorizationProperties;
 
 @Configuration
-@EnableConfigurationProperties({WebSecurityProperties.class, AuthorizationProperties.class})
+@EnableConfigurationProperties({WebSecurityProperties.class, JwtProperties.class ,AuthorizationProperties.class})
 public class PropertiesConfiguration {
 }

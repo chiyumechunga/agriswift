@@ -25,7 +25,7 @@ public class FarmerPaymentService {
 
         // 2. Promote the chosen account
         FarmerPaymentAccount account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new NotFoundException("Payment account not found"));
+                .orElseThrow(() -> new NotFoundException("Payment account not found: " + accountId));
 
         if (!account.getFarmer().getFarmerId().equals(farmerId)) {
             throw new DomainException("Account does not belong to this farmer.");

@@ -9,6 +9,7 @@ import zm.agriswift.entitlement.api.CropBuyoutRecorded;
 import zm.agriswift.entitlement.domain.Entitlement;
 import zm.agriswift.entitlement.domain.EntitlementRepository;
 import zm.agriswift.entitlement.domain.Receipt;
+import zm.agriswift.entitlement.domain.ReceiptIssuanceContext;
 import zm.agriswift.entitlement.domain.ReceiptRepository;
 import zm.agriswift.entitlement.domain.ZiamisRegistryPort;
 
@@ -42,8 +43,17 @@ public class BuyoutService {
     /** Use-case outcome, safe to expose to the web layer (no entities leak). */
     public record BuyoutOutcome(UUID entitlementId, String validationStatus, String receiptSerialNumber) {}
 
+    /**
+     * @param entitlement   the aggregate to validate and persist
+     * @param nationalIdHash blind-index source for the ZIAMIS registry check
+     * @param issuanceCtx   immutable audit context for the receipt
+     *                      (agent, device, network) — satisfies the receipt
+     *                      table NOT NULL columns without primitive sprawl
+     */
     @Transactional
-    public BuyoutOutcome recordAndValidate(Entitlement entitlement, String nationalIdHash) {
+    public BuyoutOutcome recordAndValidate(Entitlement entitlement,
+                                           String nationalIdHash,
+                                           ReceiptIssuanceContext issuanceCtx) {
         entitlement.applyMoistureRuleAndPrice();
 
         boolean ziamisMatch = ziamisRegistryPort.isFarmerRegistered(
@@ -54,7 +64,9 @@ public class BuyoutService {
 
         String receiptSerial = null;
         if (entitlement.getValidationStatus() == Entitlement.ValidationStatus.VALIDATED) {
-            Receipt receipt = receiptRepository.save(Receipt.issue(entitlement));
+            // Single context object → adding a future audit field (e.g. GPS)
+            // changes only ReceiptIssuanceContext, never this signature.
+            Receipt receipt = receiptRepository.save(Receipt.issue(entitlement, issuanceCtx));
             receiptSerial = receipt.getSystemSerialNumber();
 
             events.publishEvent(new CropBuyoutRecorded(

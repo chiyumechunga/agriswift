@@ -7,5 +7,6 @@ import java.util.UUID;
 
 public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> {
     List<LedgerEntry> findByPaymentId(UUID paymentId);
+
 }
 

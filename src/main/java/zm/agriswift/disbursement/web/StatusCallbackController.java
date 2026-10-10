@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import zm.agriswift.disbursement.internal.CallbackSignatureVerifier;
+import zm.agriswift.disbursement.api.PaymentStatus;
 
 /**
  * "Async status callback" box: the NFS switch / MNO calls back here once the
@@ -56,13 +57,17 @@ public class StatusCallbackController {
         }
         paymentRepository.save(payment);
         paymentEventRepository.save(new PaymentEvent(payment.getPaymentId(), payment.getStatus()));
+        paymentRepository.save(payment);
+        paymentEventRepository.save(new PaymentEvent(payment.getPaymentId(), payment.getStatus()));
 
+        // Domain → api projection at the module boundary.
+        // Total mapping guaranteed by PaymentStatusMirrorTest.
         events.publishEvent(new PaymentStatusChanged(
                 payment.getPaymentId(),
                 payment.getFarmerId(),
                 payment.getAmount(),
                 payment.getCurrency(),
-                payment.getStatus()));
+                PaymentStatus.valueOf(payment.getStatus().name())));
 
         return ResponseEntity.ok().build();
     }

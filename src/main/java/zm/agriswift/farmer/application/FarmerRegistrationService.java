@@ -3,10 +3,11 @@ package zm.agriswift.farmer.application;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import zm.agriswift.common.exception.DomainException;
+import zm.agriswift.farmer.FarmerOnboarding;
 import zm.agriswift.farmer.domain.Farmer;
 import zm.agriswift.farmer.domain.OnboardingChannel;
 import zm.agriswift.farmer.internal.FarmerRepository;
-import zm.agriswift.farmer.internal.PiiCipher;
+import zm.agriswift.common.security.PiiCipher;
 import zm.agriswift.referencedata.Depot;
 import zm.agriswift.referencedata.DepotRepository;
 
@@ -15,7 +16,7 @@ import java.util.UUID;
 
 @Service
 @Transactional
-public class FarmerRegistrationService {
+public class FarmerRegistrationService implements FarmerOnboarding {
 
     private final FarmerRepository farmerRepository;
     private final PiiCipher piiCipher;
@@ -29,6 +30,33 @@ public class FarmerRegistrationService {
         this.depotRepository = depotRepository;
     }
 
+    /**
+     * Exposed API for the Identity module to register a farmer via the self-service portal.
+     */
+    @Override
+    public UUID registerSelfRegisteredFarmer(FarmerOnboarding.SelfRegistrationRequest request) {
+        // Map the exposed request to the internal command
+        FarmerRegistrationCommand command = new FarmerRegistrationCommand(
+                request.firstName(),
+                request.middleName(),
+                request.lastName(),
+                request.dateOfBirth(),
+                request.nationalId(),
+                request.mobileNumber(),
+                request.email(),
+                request.preferredLanguage(),
+                OnboardingChannel.SELF_REGISTRATION,
+                null,   // registeringAgentId (UUID) — null for self-registration
+                0       // registeringDepotId (int) — ignored when channel == SELF_REGISTRATION
+        );
+
+        // Delegate to the internal registration logic
+        return registerFarmer(command);
+    }
+
+    /**
+     * Internal registration logic used by both self-registration and depot officers.
+     */
     public UUID registerFarmer(FarmerRegistrationCommand command) {
         try {
             // 1. Uniqueness checks using blind indexes

@@ -5,7 +5,7 @@
  * being called synchronously by disbursement.
  */
 @org.springframework.modulith.ApplicationModule(
-        allowedDependencies = {"common", "referencedata", "disbursement"}
+        allowedDependencies = {"common", "referencedata", "disbursement", "disbursement :: api", "blockchain :: api"}
 )
 
 package zm.agriswift.ledger;

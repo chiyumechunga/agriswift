@@ -6,6 +6,6 @@
  * as the action it's recording.
  */
 @org.springframework.modulith.ApplicationModule(
-        allowedDependencies = {"common"}
+        allowedDependencies = {"common", "blockchain :: api"}
 )
 package zm.agriswift.audit;

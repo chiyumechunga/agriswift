@@ -2,50 +2,56 @@ package zm.agriswift.blockchain.internal.dlq;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * DLQ entry for blockchain events that exhausted 3 FireFly-level
+ * retries without successful processing.
+ */
 @Entity
-@Table(name = "blockchain_failed_events")
-@Getter @Setter
+@Table(name = "blockchain_failed_events", indexes = {
+        @Index(name = "idx_dlq_retry",
+                columnList = "retry_count, next_retry_at")
+})
+@Getter @Setter @NoArgsConstructor
 public class FailedEvent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
+
+    @Column(name = "anchor_id", nullable = false)
+    private String anchorId;
+
+    @Column(name = "event_type", nullable = false)
+    private String eventType;
+
+    @Column(name = "raw_payload", nullable = false, columnDefinition = "text")
+    private String rawPayload;
+
+    @Column(name = "error_message", length = 2048)
+    private String errorMessage;
+
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
+    @Column(name = "next_retry_at", nullable = false)
+    private Instant nextRetryAt;
 
     @Column(name = "tx_id")
     private String txId;
 
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "raw_payload", columnDefinition = "text", nullable = false)
-    private String rawPayload;
-
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "error_message", columnDefinition = "text")
-    private String errorMessage;
-
-    @Column(name = "retry_count", nullable = false)
-    private int retryCount = 0;
-
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt = OffsetDateTime.now();
+    private Instant createdAt;
 
-    @Column(name = "anchor_id", length = 255)
-    private String anchorId;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
-    @Column(name = "event_type", nullable = false, length = 100)
-    private String eventType;
-
-    @Column(name = "next_retry_at")
-    private OffsetDateTime nextRetryAt;
-
-    // Read-only in JPA: the DB default + trigger own this column
-    @Column(name = "updated_at", nullable = false, insertable = false, updatable = false)
-    private OffsetDateTime updatedAt;
+    @PreUpdate
+    void onUpdate() { this.updatedAt = Instant.now(); }
 }

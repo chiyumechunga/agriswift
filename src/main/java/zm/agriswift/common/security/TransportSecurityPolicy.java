@@ -8,6 +8,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -27,24 +28,25 @@ public class TransportSecurityPolicy implements Customizer<HttpSecurity> {
 
     @Override
     public void customize(HttpSecurity http) {
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable) // Stateless Bearer API
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)   // JSON-only API; preflight-protected
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(properties.contentSecurityPolicy()))
-                        .contentTypeOptions(Customizer.withDefaults())          // X-Content-Type-Options: nosniff
-                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)); // X-Frame-Options: DENY
-        // NOTE: xssProtection() intentionally absent — X-XSS-Protection is deprecated
-        // (OWASP, Spring Security 7). CSP above is the effective XSS control.
+                        .contentTypeOptions(Customizer.withDefaults())
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(properties.allowedOrigins());
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
+        cfg.setExposedHeaders(List.of("X-XSRF-TOKEN"));
         cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;

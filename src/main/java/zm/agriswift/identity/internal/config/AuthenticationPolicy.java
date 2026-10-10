@@ -8,7 +8,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import zm.agriswift.identity.internal.security.JwtAuthenticationFilter;
+import zm.agriswift.common.security.JwtAuthenticationFilter;
 
 @Configuration
 @Order(20)

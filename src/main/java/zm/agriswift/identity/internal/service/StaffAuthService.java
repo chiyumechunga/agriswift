@@ -71,7 +71,7 @@ public class StaffAuthService implements AuthService, RefreshTokenRotator {
             throw new BadCredentialsException("Invalid refresh token for this principal type");
         }
 
-        if (!stored.isActive(Instant.now())) {
+        if (stored.isActive(Instant.now())) {
             refreshTokenRepository.revokeAllByUserId(stored.getUserId(), Instant.now());
             throw new BadCredentialsException("Refresh token reuse detected");
         }

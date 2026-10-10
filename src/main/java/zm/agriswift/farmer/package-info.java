@@ -29,7 +29,7 @@
  * <p>
  * All personally identifiable information (national ID, mobile number) is stored as ciphertext
  * (AES‑GCM) plus a deterministic HMAC‑SHA256 blind index for equality lookups.
- * The {@link zm.agriswift.farmer.internal.PiiCipher} component handles encryption and hashing;
+ * The {@link zm.agriswift.common.security.PiiCipher} component handles encryption and hashing;
  * the actual decryption key resides in an HSM/KMS outside the application.
  * This implementation is a placeholder and MUST be replaced with a production‑grade
  * KMS/HSM client before going live.

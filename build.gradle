@@ -31,8 +31,9 @@ dependencies {
 	// ==========================================
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework:spring-webflux'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket' // Proper Boot integration for FireFly WS client
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -47,6 +48,8 @@ dependencies {
 	// ==========================================
 	// Database
 	// ==========================================
+	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.flywaydb:flyway-database-postgresql' // Required for PG 16+ in newer Flyway versions
 	runtimeOnly 'org.postgresql:postgresql'
 
 	// ==========================================
@@ -61,6 +64,8 @@ dependencies {
 	// ==========================================
 	// Developer Tools & Boilerplate Reduction
 	// ==========================================
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
