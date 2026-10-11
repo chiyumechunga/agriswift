@@ -37,8 +37,6 @@ public class JwtService {
 
     public JwtService(JwtProperties properties) {
         this.properties = properties;
-        // Keys.hmacShaKeyFor throws WeakKeyException if < 256 bits (belt & braces
-        // on top of the JwtProperties validation).
         this.signingKey = Keys.hmacShaKeyFor(properties.secret().getBytes(StandardCharsets.UTF_8));
     }
 
@@ -52,11 +50,15 @@ public class JwtService {
         return build(subject, TYPE_REFRESH, Map.of(), properties.refreshTokenExpirationMs());
     }
 
+    public Duration accessTokenTtl() {
+        return Duration.ofMillis(properties.accessTokenExpirationMs());
+    }
+
     private String build(String subject, String tokenType, Map<String, Object> extraClaims, long ttlMs) {
         Instant now = Instant.now();
 
         var builder = Jwts.builder()
-                .id(UUID.randomUUID().toString())          // jti: enables future revocation lists
+                .id(UUID.randomUUID().toString())
                 .issuer(ISSUER)
                 .subject(subject)
                 .issuedAt(Date.from(now))
@@ -70,11 +72,6 @@ public class JwtService {
 
     // ─────────────────────────── VERIFICATION ───────────────────────────
 
-    /**
-     * Parses and cryptographically verifies a token.
-     * Expiry, signature, and malformed-structure checks are enforced by jjwt;
-     * any failure yields an empty Optional rather than an exception.
-     */
     public Optional<Claims> parse(String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
@@ -87,8 +84,6 @@ public class JwtService {
                             .parseSignedClaims(token)
                             .getPayload());
         } catch (JwtException | IllegalArgumentException ex) {
-            // ExpiredJwtException, UnsupportedJwtException, MalformedJwtException,
-            // SignatureException all surface here. Never log the token itself.
             log.debug("JWT rejected: {}", ex.getMessage());
             return Optional.empty();
         }
@@ -115,10 +110,12 @@ public class JwtService {
         return isAccessTokenValid(token, userDetails.getUsername());
     }
 
-    // ─────────────────────────── HELPERS ───────────────────────────
+    public String issueRefreshToken(String subject, Map<String, Object> extraClaims) {
+        return build(subject, TYPE_REFRESH, extraClaims, properties.refreshTokenExpirationMs());
+    }
 
-    /** Useful for setting cookie Max-Age to exactly match the refresh token TTL. */
     public Duration refreshTokenTtl() {
         return Duration.ofMillis(properties.refreshTokenExpirationMs());
     }
+
 }

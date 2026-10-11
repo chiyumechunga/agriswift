@@ -12,19 +12,15 @@ import org.springframework.stereotype.Component;
 import zm.agriswift.common.security.PiiCipher;
 
 import java.security.GeneralSecurityException;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * Seeds prerequisite data for development/testing.
- * Gated by agriswift.seed.enabled=true property.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "agriswift.seed.enabled", havingValue = "true")
 public class DevDataSeeder implements ApplicationRunner {
 
-    private static final UUID FARMER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final String FARMER_CODE = "FRA-0001";
 
     private final JdbcTemplate jdbc;
@@ -52,211 +48,203 @@ public class DevDataSeeder implements ApplicationRunner {
         }
     }
 
-    private void seedStaff() {
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM users WHERE username = ?",
-                Integer.class, "admin");
-
-        if (count != null && count > 0) {
-            log.debug("Admin user already exists, skipping.");
-            return;
+    /**
+     * Helper to fetch exactly one row. Throws if the query returns 0 or >1 rows,
+     * which helps catch schema drift or unexpected duplicate data early.
+     */
+    private <T> T getOne(String sql, Class<T> type, Object... args) {
+        List<T> rows = jdbc.queryForList(sql, type, args);
+        if (rows.isEmpty()) {
+            throw new IllegalStateException("Expected exactly one row for query: " + sql);
         }
-
-        Integer roleId = jdbc.queryForObject(
-                "SELECT role_id FROM roles WHERE role_name = 'ROLE_STAFF'",
-                Integer.class);
-
-        if (roleId == null) {
-            jdbc.update("INSERT INTO roles (role_name, description) VALUES ('ROLE_STAFF', 'Staff role')");
-            roleId = jdbc.queryForObject(
-                    "SELECT role_id FROM roles WHERE role_name = 'ROLE_STAFF'",
-                    Integer.class);
-        }
-
-        UUID userId = UUID.randomUUID();
-        jdbc.update("""
-            INSERT INTO users (user_id, external_subject, username, password_hash, is_active, created_at)
-            VALUES (?, ?, ?, ?, true, NOW())
-            """,
-                userId, "local-admin", "admin", passwordEncoder.encode(adminPassword));
-
-        jdbc.update("""
-            INSERT INTO user_roles (user_id, role_id, granted_at)
-            VALUES (?, ?, NOW())
-            """,
-                userId, roleId);
-
-        log.info("Created admin user: admin / {}", adminPassword);
+        return rows.get(0);
     }
 
-    private void seedFarmer() {
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM farmers WHERE farmer_id = ?",
-                Integer.class, FARMER_ID);
+    private void seedStaff() {
+        // 1. Ensure STAFF role exists (roles.role_name is UNIQUE)
+        jdbc.update("""
+            INSERT INTO roles (role_name, description)
+            SELECT 'STAFF', 'Staff role'
+            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_name = 'STAFF')
+            """);
 
-        if (count != null && count > 0) {
-            log.debug("Test farmer already exists, skipping.");
-            return;
-        }
+        Short staffRoleId = getOne(
+                "SELECT role_id FROM roles WHERE role_name = 'STAFF'", Short.class);
 
+        // 2. Ensure admin user exists
+        // Check against external_subject because it has a UNIQUE constraint in the schema.
+        jdbc.update("""
+            INSERT INTO users (external_subject, username, email, password_hash, is_active, created_at, updated_at)
+            SELECT 'local:admin', 'admin', 'admin@agriswift.zm', ?, true, NOW(), NOW()
+            WHERE NOT EXISTS (SELECT 1 FROM users WHERE external_subject = 'local:admin')
+            """,
+                passwordEncoder.encode(adminPassword));
+
+        UUID userId = getOne(
+                "SELECT user_id FROM users WHERE external_subject = 'local:admin'", UUID.class);
+
+        // 3. Ensure user-role mapping exists (Composite Primary Key: user_id, role_id)
+        jdbc.update("""
+            INSERT INTO user_roles (user_id, role_id, granted_at)
+            SELECT ?, ?, NOW()
+            WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = ? AND role_id = ?)
+            """,
+                userId, staffRoleId, userId, staffRoleId);
+
+        log.info("Admin user ensured: admin / {} (user_id: {})", adminPassword, userId);
+    }
+
+    private void seedFarmer() throws GeneralSecurityException {
         String nationalId = "999999/61/1";
-        String mobile = "0978602368";
+        String mobile     = "0978602368";
 
-        try {
-            jdbc.update("""
-                INSERT INTO farmers (
-                    farmer_id, farmer_code, first_name, last_name, 
-                    national_id_ciphertext, national_id_hash,
-                    mobile_number_ciphertext, mobile_number_hash,
-                    preferred_language, kyc_status, onboarding_channel,
-                    is_active, created_at, updated_at
-                ) VALUES (
-                    ?, ?, ?, ?, 
-                    ?, ?,
-                    ?, ?,
-                    'ENGLISH', 'VERIFIED', 'MANUAL',
-                    true, NOW(), NOW()
-                )
-                """,
-                    FARMER_ID, FARMER_CODE, "Test", "Farmer",
-                    pii.encrypt(nationalId), pii.generateBlindIndex(nationalId),
-                    pii.encrypt(mobile), pii.generateBlindIndex(mobile));
+        // 1. Ensure farmer exists (farmers.farmer_code is UNIQUE)
+        jdbc.update("""
+            INSERT INTO farmers (
+                farmer_code, first_name, last_name,
+                national_id_ciphertext, national_id_hash,
+                mobile_number_ciphertext, mobile_number_hash,
+                preferred_language, kyc_status, onboarding_channel,
+                is_active, created_at, updated_at
+            )
+            SELECT ?, ?, ?, ?, ?, ?, ?, 'ENGLISH', 'VERIFIED', 'MANUAL', true, NOW(), NOW()
+            WHERE NOT EXISTS (SELECT 1 FROM farmers WHERE farmer_code = ?)
+            """,
+                FARMER_CODE, "Test", "Farmer",
+                pii.encrypt(nationalId), pii.generateBlindIndex(nationalId),
+                pii.encrypt(mobile),    pii.generateBlindIndex(mobile),
+                FARMER_CODE);
 
-            log.info("Created test farmer: {} ({})", FARMER_CODE, FARMER_ID);
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException("Failed to encrypt farmer PII", e);
-        }
+        UUID farmerId = getOne(
+                "SELECT farmer_id FROM farmers WHERE farmer_code = ?", UUID.class, FARMER_CODE);
+
+        // 2. Ensure credentials exist (Unique index on farmer_id)
+        jdbc.update("""
+            INSERT INTO farmer_credentials (farmer_id, pin_hash, failed_attempts, locked_until, created_at)
+            SELECT ?, ?, 0, NULL, NOW()
+            WHERE NOT EXISTS (SELECT 1 FROM farmer_credentials WHERE farmer_id = ?)
+            """,
+                farmerId, passwordEncoder.encode("1234"), farmerId);
+
+        log.info("Test farmer ensured: {} / mobile {} / PIN 1234 (farmer_id: {})",
+                FARMER_CODE, mobile, farmerId);
     }
 
     private void seedReferenceData() {
-        log.info("Seeding reference data...");
-
-        // Depots (Lusaka is DPT-005)
+        // Depots (depot_code is UNIQUE)
         jdbc.update("""
             INSERT INTO depots (depot_code, name, district, province, is_active, created_at)
-            VALUES
-              ('DPT-005', 'Lusaka Central Depot', 'Lusaka', 'Lusaka', true, NOW()),
-              ('DPT-003', 'Bwana Mkubwa Depot', 'Ndola', 'Copperbelt', true, NOW())
-            ON CONFLICT (depot_code) DO NOTHING
+            SELECT 'DPT-005', 'Lusaka Central Depot', 'Lusaka', 'Lusaka', true, NOW()
+            WHERE NOT EXISTS (SELECT 1 FROM depots WHERE depot_code = 'DPT-005')
+            """);
+        jdbc.update("""
+            INSERT INTO depots (depot_code, name, district, province, is_active, created_at)
+            SELECT 'DPT-003', 'Bwana Mkubwa Depot', 'Ndola', 'Copperbelt', true, NOW()
+            WHERE NOT EXISTS (SELECT 1 FROM depots WHERE depot_code = 'DPT-003')
             """);
 
-        // Crop types
+        // Crop Types (name is UNIQUE)
         jdbc.update("""
-            INSERT INTO crop_types (name) VALUES
-              ('White Maize'),
-              ('Paddy Rice')
-            ON CONFLICT (name) DO NOTHING
+            INSERT INTO crop_types (name)
+            SELECT 'White Maize' WHERE NOT EXISTS (SELECT 1 FROM crop_types WHERE name = 'White Maize')
+            """);
+        jdbc.update("""
+            INSERT INTO crop_types (name)
+            SELECT 'Paddy Rice' WHERE NOT EXISTS (SELECT 1 FROM crop_types WHERE name = 'Paddy Rice')
             """);
 
-        // 1. Close historical open-ended prices that PREDATE the FRA 2026 season.
+        // Crop Prices (Time-series logic remains unchanged)
         jdbc.update("""
-            UPDATE crop_prices
-            SET effective_to = '2026-07-28 23:59:59.999999+02'
-            WHERE effective_to IS NULL
-              AND effective_from < '2026-07-29 00:00:00+02'
+            UPDATE crop_prices SET effective_to = '2026-07-28 23:59:59.999999+02'
+            WHERE effective_to IS NULL AND effective_from < '2026-07-29 00:00:00+02'
             """);
 
-        // 2. Correct any lingering open-ended PLACEHOLDER for a FRA crop into the
-        //    official 2026 row IN PLACE. (Paddy Rice corrected to 7.50/kg per FRA announcement).
         jdbc.update("""
-            UPDATE crop_prices cp
-            SET season               = '2026',
-                price_per_kg         = v.price,
-                max_moisture_pct     = v.moisture,
+            UPDATE crop_prices cp SET
+                season = '2026', price_per_kg = v.price, max_moisture_pct = v.moisture,
                 board_resolution_ref = 'FRA-BOARD-RES-2026-07',
-                effective_from       = '2026-07-29 00:00:00+02',
-                effective_to         = NULL
+                effective_from = '2026-07-29 00:00:00+02', effective_to = NULL
             FROM (VALUES
-                    ('White Maize', 6.9400::numeric, 13.50::numeric),
-                    ('Paddy Rice',  7.5000::numeric, 14.00::numeric)
-                 ) AS v(crop, price, moisture)
+                ('White Maize', 6.9400::numeric, 13.50::numeric),
+                ('Paddy Rice',  7.5000::numeric, 14.00::numeric))
+            AS v(crop, price, moisture)
             JOIN crop_types ct ON ct.name = v.crop
-            WHERE cp.crop_type_id = ct.crop_type_id
-              AND cp.effective_to IS NULL
-              AND (cp.board_resolution_ref IS NULL
-                   OR cp.board_resolution_ref <> 'FRA-BOARD-RES-2026-07')
+            WHERE cp.crop_type_id = ct.crop_type_id AND cp.effective_to IS NULL
+              AND (cp.board_resolution_ref IS NULL OR cp.board_resolution_ref <> 'FRA-BOARD-RES-2026-07')
             """);
 
-        // 3. Insert any official 2026 price still missing (crop had no placeholder).
         jdbc.update("""
             INSERT INTO crop_prices (crop_type_id, season, price_per_kg, max_moisture_pct,
                                      board_resolution_ref, effective_from)
             SELECT ct.crop_type_id, '2026', v.price, v.moisture,
                    'FRA-BOARD-RES-2026-07', '2026-07-29 00:00:00+02'
             FROM (VALUES
-                    ('White Maize', 6.9400::numeric, 13.50::numeric),
-                    ('Paddy Rice',  7.5000::numeric, 14.00::numeric)
-                 ) AS v(crop, price, moisture)
+                ('White Maize', 6.9400::numeric, 13.50::numeric),
+                ('Paddy Rice',  7.5000::numeric, 14.00::numeric))
+            AS v(crop, price, moisture)
             JOIN crop_types ct ON ct.name = v.crop
             WHERE NOT EXISTS (
                 SELECT 1 FROM crop_prices cp
                 WHERE cp.crop_type_id = ct.crop_type_id
-                  AND cp.board_resolution_ref = 'FRA-BOARD-RES-2026-07'
-            )
+                  AND cp.board_resolution_ref = 'FRA-BOARD-RES-2026-07')
             """);
 
-        log.info("Reference data seeded: depots DPT-005 (Lusaka), DPT-003; FRA 2026 prices active "
-                + "(White Maize K6.94/kg, Paddy Rice K7.50/kg from 2026-07-29).");
+        log.info("Reference data ensured.");
     }
 
     private void seedChartOfAccounts() {
-        log.info("Seeding chart of accounts...");
-
+        // account_code is PRIMARY KEY
         jdbc.update("""
-            INSERT INTO chart_of_accounts (account_code, account_name, account_category) VALUES
-              ('FARMER_PAYABLE',  'Farmer Payable',           'LIABILITY'),
-              ('BANK_SETTLEMENT', 'Bank Settlement Clearing', 'ASSET'),
-              ('TREASURY_CASH',   'Treasury Cash',            'ASSET')
-            ON CONFLICT (account_code) DO NOTHING
+            INSERT INTO chart_of_accounts (account_code, account_name, account_category)
+            SELECT 'FARMER_PAYABLE', 'Farmer Payable', 'LIABILITY'
+            WHERE NOT EXISTS (SELECT 1 FROM chart_of_accounts WHERE account_code = 'FARMER_PAYABLE')
             """);
-
-        log.info("Chart of accounts seeded: FARMER_PAYABLE, BANK_SETTLEMENT, TREASURY_CASH");
+        jdbc.update("""
+            INSERT INTO chart_of_accounts (account_code, account_name, account_category)
+            SELECT 'BANK_SETTLEMENT', 'Bank Settlement Clearing', 'ASSET'
+            WHERE NOT EXISTS (SELECT 1 FROM chart_of_accounts WHERE account_code = 'BANK_SETTLEMENT')
+            """);
+        jdbc.update("""
+            INSERT INTO chart_of_accounts (account_code, account_name, account_category)
+            SELECT 'TREASURY_CASH', 'Treasury Cash', 'ASSET'
+            WHERE NOT EXISTS (SELECT 1 FROM chart_of_accounts WHERE account_code = 'TREASURY_CASH')
+            """);
     }
 
     private void seedPayoutInfrastructure() throws GeneralSecurityException {
-        log.info("Seeding payout infrastructure...");
-
+        // 1. Ensure Payment Provider exists (provider_code is UNIQUE)
         jdbc.update("""
             INSERT INTO payment_providers (provider_type, provider_name, provider_code, is_active, health_status)
-            VALUES ('MOBILE_MONEY', 'Airtel Money', 'AIRTEL', true, 'HEALTHY')
-            ON CONFLICT (provider_code) DO NOTHING
+            SELECT 'MOBILE_MONEY', 'Airtel Money', 'AIRTEL', true, 'HEALTHY'
+            WHERE NOT EXISTS (SELECT 1 FROM payment_providers WHERE provider_code = 'AIRTEL')
             """);
 
-        Integer accountCount = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM farmer_payment_accounts WHERE farmer_id = ? AND is_preferred = true",
-                Integer.class, FARMER_ID);
+        Short providerId = getOne(
+                "SELECT provider_id FROM payment_providers WHERE provider_code = 'AIRTEL'", Short.class);
 
-        if (accountCount != null && accountCount > 0) {
-            log.debug("Farmer already has a preferred payout account, skipping.");
-            return;
-        }
-
-        Short providerId = jdbc.queryForObject(
-                "SELECT provider_id FROM payment_providers WHERE provider_code = 'AIRTEL'",
-                Short.class);
-
-        if (providerId == null) {
-            log.error("Airtel provider not found in database!");
-            return;
-        }
+        UUID farmerId = getOne(
+                "SELECT farmer_id FROM farmers WHERE farmer_code = ?", UUID.class, FARMER_CODE);
 
         String msisdn = "0978602368";
 
-        try {
-            jdbc.update("""
-        INSERT INTO farmer_payment_accounts
-          (farmer_id, provider_id, account_type, account_owner_type,
-           account_number_ciphertext, account_number_hash,
-           is_preferred, is_verified, is_verified_by_zechl, is_active, created_at)
-        VALUES (?, ?, 'MOBILE_MONEY', 'FARMER', ?, ?,
-                true, true, true, true, NOW())
-        """,
-                    FARMER_ID, providerId,
-                    pii.encrypt(msisdn), pii.generateBlindIndex(msisdn));
+        // 2. Ensure Preferred Payment Account exists
+        // Note: The schema has a partial unique index: idx_one_preferred_account_per_farmer (farmer_id) WHERE is_preferred
+        jdbc.update("""
+            INSERT INTO farmer_payment_accounts (
+                farmer_id, provider_id, account_type, account_owner_type,
+                account_number_ciphertext, account_number_hash,
+                is_preferred, is_verified, is_verified_by_zechl, is_active, created_at
+            )
+            SELECT ?, ?, 'MOBILE_MONEY', 'FARMER', ?, ?, true, true, true, true, NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM farmer_payment_accounts 
+                WHERE farmer_id = ? AND is_preferred = true
+            )
+            """,
+                farmerId, providerId,
+                pii.encrypt(msisdn), pii.generateBlindIndex(msisdn),
+                farmerId);
 
-            log.info("Created preferred MOBILE_MONEY account for farmer {}", FARMER_ID);
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException("Failed to encrypt payment account PII", e);
-        }
+        log.info("Preferred MOBILE_MONEY account ensured for farmer {} ({}).", FARMER_CODE, farmerId);
     }
 }
